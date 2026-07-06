@@ -1,0 +1,16 @@
+spring:
+  main:
+    web-application-type: none   # 非 Web 模式, 不启动 Tomcat
+    headless: false              # 允许 JavaFX GUI
+    banner-mode: off             # 关闭启动横幅
+  application:
+    name: JPostman2
+
+# JPostman2 自定义配置
+jpostman2:
+  # 数据存储根目录(默认用户主目录下 .api-client)
+  data-dir: ${user.home}/.api-client
+  # 历史记录上限
+  history-limit: 500
+  # 默认主题: light / dark
+  theme: dark
