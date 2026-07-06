@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -88,17 +89,36 @@ public class PluginManager {
         ensurePluginsDir();
         int successCount = 0;
         try (Stream<Path> files = Files.list(pluginsDir)) {
-            List<Path> javaFiles = files
-                    .filter(f -> f.toString().endsWith(".java"))
+            List<Path> allFiles = files
+                    .filter(f -> {
+                        String name = f.getFileName().toString();
+                        return name.endsWith(".java") || name.endsWith(".jar");
+                    })
                     .sorted()
                     .toList();
-            for (Path file : javaFiles) {
+            for (Path file : allFiles) {
+                String fileName = file.getFileName().toString();
                 try {
-                    loadPlugin(file);
+                    if (fileName.endsWith(".jar")) {
+                        loadJarPlugin(file);
+                    } else {
+                        // 编译器不可用时跳过 .java 文件
+                        if (!compiler.isAvailable()) {
+                            log.warn("跳过 Java 源码插件 {} (编译器不可用)", fileName);
+                            String pluginId = pluginIdFromFile(file);
+                            Plugin plugin = plugins.computeIfAbsent(pluginId,
+                                    k -> new Plugin(pluginId, pluginId, file.toString()));
+                            plugin.setStatus(Plugin.LoadStatus.FAILED);
+                            plugin.setErrorMessage("编译器不可用,请使用 JDK 启动或改用 .jar 插件");
+                            continue;
+                        }
+                        loadPlugin(file);
+                    }
                     successCount++;
                 } catch (Exception e) {
                     log.error("加载插件失败: {}", file.getFileName(), e);
-                    String pluginId = pluginIdFromFile(file);
+                    String pluginId = fileName.endsWith(".jar")
+                            ? pluginIdFromJarFile(file) : pluginIdFromFile(file);
                     Plugin plugin = plugins.computeIfAbsent(pluginId,
                             k -> new Plugin(pluginId, pluginId, file.toString()));
                     plugin.setStatus(Plugin.LoadStatus.FAILED);
@@ -187,6 +207,87 @@ public class PluginManager {
     }
 
     /**
+     * 加载单个 JAR 插件。
+     * JAR 插件是预编译的字节码,不需要编译器,直接通过 URLClassLoader 加载。
+     *
+     * @param jarFile .jar 文件路径
+     */
+    public void loadJarPlugin(Path jarFile) throws Exception {
+        String pluginId = pluginIdFromJarFile(jarFile);
+
+        // 先卸载旧版本(如果存在)
+        if (plugins.containsKey(pluginId)) {
+            unloadPlugin(pluginId);
+        }
+
+        // 创建 URLClassLoader 加载 JAR
+        java.net.URL jarUrl = jarFile.toUri().toURL();
+        URLClassLoader classLoader = new URLClassLoader(new java.net.URL[]{jarUrl},
+                Thread.currentThread().getContextClassLoader());
+
+        // 扫描 JAR 中所有 .class 文件,查找实现 ExtensionPoint 的类
+        List<Object> instances = new ArrayList<>();
+        List<String> extPoints = new ArrayList<>();
+
+        try (java.util.jar.JarFile jar = new java.util.jar.JarFile(jarFile.toFile())) {
+            java.util.Enumeration<java.util.jar.JarEntry> entries = jar.entries();
+            while (entries.hasMoreElements()) {
+                java.util.jar.JarEntry entry = entries.nextElement();
+                String entryName = entry.getName();
+                if (!entryName.endsWith(".class") || entryName.contains("$")) {
+                    // 跳过内部类(后面会通过 getDeclaredClasses 查找)
+                    continue;
+                }
+                String className = entryName.substring(0, entryName.length() - 6).replace('/', '.');
+                try {
+                    Class<?> clazz = classLoader.loadClass(className);
+                    if (ExtensionPoint.class.isAssignableFrom(clazz) && !clazz.isInterface()
+                            && !java.lang.reflect.Modifier.isAbstract(clazz.getModifiers())) {
+                        Object instance = instantiate(clazz);
+                        if (instance != null) {
+                            instances.add(instance);
+                            extPoints.add(clazz.getSimpleName());
+                            registry.register(pluginId, (ExtensionPoint) instance);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("加载 JAR 中的类失败: {}", className, e);
+                }
+            }
+        }
+
+        // 查找带 @JcurlPlugin 注解的类来获取元数据
+        Plugin plugin = new Plugin(pluginId, pluginId, jarFile.toString());
+        for (Object instance : instances) {
+            JcurlPlugin annotation = instance.getClass().getAnnotation(JcurlPlugin.class);
+            if (annotation != null) {
+                if (!annotation.name().isEmpty()) plugin.setName(annotation.name());
+                plugin.setDescription(annotation.description());
+                plugin.setVersion(annotation.version());
+                plugin.setAuthor(annotation.author());
+                plugin.setEnabled(annotation.enabled());
+                break;
+            }
+        }
+        plugin.getExtensionPoints().addAll(extPoints);
+        plugin.setLoadedAt(LocalDateTime.now());
+        plugin.setStatus(plugin.isEnabled() ? Plugin.LoadStatus.LOADED : Plugin.LoadStatus.DISABLED);
+
+        // 如果禁用,从注册表移除
+        if (!plugin.isEnabled()) {
+            for (Object instance : instances) {
+                registry.unregister(pluginId);
+            }
+        }
+
+        plugins.put(pluginId, plugin);
+        pluginClassLoaders.put(pluginId, classLoader);
+        pluginInstances.put(pluginId, instances);
+
+        log.info("JAR 插件已加载: id={}, name={}, extensions={}", pluginId, plugin.getName(), extPoints);
+    }
+
+    /**
      * 卸载指定插件。
      *
      * @param pluginId 插件 ID
@@ -194,8 +295,14 @@ public class PluginManager {
     public void unloadPlugin(String pluginId) {
         registry.unregister(pluginId);
         pluginInstances.remove(pluginId);
-        pluginClassLoaders.remove(pluginId);
-
+        ClassLoader cl = pluginClassLoaders.remove(pluginId);
+        if (cl instanceof URLClassLoader urlCl) {
+            try {
+                urlCl.close();
+            } catch (Exception e) {
+                log.warn("关闭 ClassLoader 失败: {}", pluginId, e);
+            }
+        }
         Plugin plugin = plugins.get(pluginId);
         if (plugin != null) {
             plugin.setStatus(Plugin.LoadStatus.UNLOADED);
@@ -214,7 +321,12 @@ public class PluginManager {
             throw new IllegalArgumentException("插件不存在: " + pluginId);
         }
         unloadPlugin(pluginId);
-        loadPlugin(Path.of(plugin.getSourceFile()));
+        Path sourceFile = Path.of(plugin.getSourceFile());
+        if (plugin.getSourceFile().endsWith(".jar")) {
+            loadJarPlugin(sourceFile);
+        } else {
+            loadPlugin(sourceFile);
+        }
         log.info("插件已重载: {}", pluginId);
     }
 
@@ -284,6 +396,12 @@ public class PluginManager {
     private String pluginIdFromFile(Path file) {
         String fileName = file.getFileName().toString();
         return fileName.substring(0, fileName.length() - 5);
+    }
+
+    /** 从 JAR 文件名生成插件 ID(去掉 .jar 后缀) */
+    private String pluginIdFromJarFile(Path file) {
+        String fileName = file.getFileName().toString();
+        return fileName.substring(0, fileName.length() - 4);
     }
 
     /**

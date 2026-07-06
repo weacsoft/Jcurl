@@ -8,7 +8,6 @@ import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -128,7 +127,8 @@ public class PluginManagerDialog {
     // ==================== UI 构建 ====================
 
     /**
-     * 创建插件表格 (Name / Version / Status / Description)。
+     * 创建插件表格 (名称 / 版本 / 状态 / 描述)。
+     * 使用 lambda cellValueFactory 而非 PropertyValueFactory,确保对普通 JavaBean 可靠工作。
      */
     private TableView<Plugin> createPluginTable() {
         TableView<Plugin> table = new TableView<>();
@@ -136,17 +136,20 @@ public class PluginManagerDialog {
         table.setPlaceholder(new Label("暂无已加载插件"));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        TableColumn<Plugin, String> nameCol = new TableColumn<>("Name");
-        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        TableColumn<Plugin, String> nameCol = new TableColumn<>("名称");
+        nameCol.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
+                cell.getValue().getName() != null ? cell.getValue().getName() : cell.getValue().getId()));
         nameCol.setPrefWidth(180);
 
-        TableColumn<Plugin, String> versionCol = new TableColumn<>("Version");
-        versionCol.setCellValueFactory(new PropertyValueFactory<>("version"));
+        TableColumn<Plugin, String> versionCol = new TableColumn<>("版本");
+        versionCol.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
+                cell.getValue().getVersion() != null ? cell.getValue().getVersion() : ""));
         versionCol.setPrefWidth(90);
 
         // Status 列: 按加载状态着色显示
-        TableColumn<Plugin, Plugin.LoadStatus> statusCol = new TableColumn<>("Status");
-        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+        TableColumn<Plugin, Plugin.LoadStatus> statusCol = new TableColumn<>("状态");
+        statusCol.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(
+                cell.getValue().getStatus()));
         statusCol.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(Plugin.LoadStatus item, boolean empty) {
@@ -175,8 +178,9 @@ public class PluginManagerDialog {
         });
         statusCol.setPrefWidth(100);
 
-        TableColumn<Plugin, String> descCol = new TableColumn<>("Description");
-        descCol.setCellValueFactory(new PropertyValueFactory<>("description"));
+        TableColumn<Plugin, String> descCol = new TableColumn<>("描述");
+        descCol.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
+                cell.getValue().getDescription() != null ? cell.getValue().getDescription() : ""));
         descCol.setPrefWidth(320);
 
         table.getColumns().addAll(nameCol, versionCol, statusCol, descCol);
@@ -193,8 +197,8 @@ public class PluginManagerDialog {
                            ProgressIndicator progress, Button[] buttons) {
         // AWT FileDialog (兼容 Windows Server, 避免 JFileChooser 卡死)
         java.awt.FileDialog fd = new java.awt.FileDialog(
-                (java.awt.Frame) null, "选择插件文件 (.java)", java.awt.FileDialog.LOAD);
-        fd.setFilenameFilter((dir, name) -> name != null && name.endsWith(".java"));
+                (java.awt.Frame) null, "选择插件文件 (.java 或 .jar)", java.awt.FileDialog.LOAD);
+        fd.setFilenameFilter((dir, name) -> name != null && (name.endsWith(".java") || name.endsWith(".jar")));
         fd.setVisible(true);
 
         String fileName = fd.getFile();

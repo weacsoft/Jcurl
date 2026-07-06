@@ -81,8 +81,8 @@ public class PluginService {
         pluginManager = new PluginManager(pluginsDir, pluginContext);
 
         if (!pluginManager.isCompilerAvailable()) {
-            log.warn("插件编译器不可用,插件功能已禁用。如需启用插件,请使用 JDK 启动: java --add-modules jdk.compiler -jar xxx.jar");
-            return;
+            log.warn("Java 编译器不可用,.java 源码插件将被跳过。.jar 插件仍可正常加载。"
+                    + "如需启用源码插件,请使用 JDK 启动: java --add-modules jdk.compiler -jar xxx.jar");
         }
 
         try {
@@ -242,25 +242,39 @@ public class PluginService {
     }
 
     /**
-     * 安装新插件: 将源 .java 文件复制到插件目录并加载。
+     * 安装新插件: 将源文件(.java 或 .jar)复制到插件目录并加载。
      *
-     * @param sourceFile 用户选择的插件源文件 (.java)
+     * @param sourceFile 用户选择的插件文件 (.java 或 .jar)
      * @return 加载后的插件元数据; 加载失败时返回 status=FAILED 的 Plugin
      */
     public Plugin installPlugin(Path sourceFile) {
         try {
             Files.createDirectories(pluginsDir);
             String fileName = sourceFile.getFileName().toString();
-            if (!fileName.endsWith(".java")) {
+            boolean isJava = fileName.endsWith(".java");
+            boolean isJar = fileName.endsWith(".jar");
+            if (!isJava && !isJar) {
                 Plugin fail = new Plugin(fileName, fileName, sourceFile.toString());
                 fail.setStatus(Plugin.LoadStatus.FAILED);
-                fail.setErrorMessage("仅支持 .java 源码插件");
+                fail.setErrorMessage("仅支持 .java 源码插件或 .jar 编译插件");
+                return fail;
+            }
+            // .java 文件需要编译器
+            if (isJava && !pluginManager.isCompilerAvailable()) {
+                Plugin fail = new Plugin(fileName, fileName, sourceFile.toString());
+                fail.setStatus(Plugin.LoadStatus.FAILED);
+                fail.setErrorMessage("Java 编译器不可用,无法编译 .java 插件。请改用 .jar 插件,或使用 JDK 启动");
                 return fail;
             }
             Path target = pluginsDir.resolve(fileName);
             Files.copy(sourceFile, target, StandardCopyOption.REPLACE_EXISTING);
-            pluginManager.loadPlugin(target);
-            return pluginManager.getPlugin(fileName.substring(0, fileName.length() - 5));
+            if (isJar) {
+                pluginManager.loadJarPlugin(target);
+                return pluginManager.getPlugin(fileName.substring(0, fileName.length() - 4));
+            } else {
+                pluginManager.loadPlugin(target);
+                return pluginManager.getPlugin(fileName.substring(0, fileName.length() - 5));
+            }
         } catch (Exception e) {
             log.error("安装插件失败: {}", sourceFile, e);
             String name = sourceFile.getFileName().toString();
