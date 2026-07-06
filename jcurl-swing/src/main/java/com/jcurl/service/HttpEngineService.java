@@ -83,6 +83,7 @@ public class HttpEngineService {
     private final OkHttpClient client;
     private final HistoryService historyService;
     private final CookieService cookieService;
+    private final com.jcurl.plugin.PluginManager pluginManager;
 
     /** 默认请求头提供者 (核心层, 无状态), 负责自动默认头与用户头的合并。 */
     private final DefaultHeaderProvider defaultHeaderProvider = new DefaultHeaderProvider();
@@ -91,10 +92,12 @@ public class HttpEngineService {
     private volatile Call currentCall;
 
     public HttpEngineService(ObjectMapper objectMapper, HistoryService historyService,
-                             CookieService cookieService) {
+                             CookieService cookieService,
+                             com.jcurl.plugin.PluginManager pluginManager) {
         this.objectMapper = objectMapper;
         this.historyService = historyService;
         this.cookieService = cookieService;
+        this.pluginManager = pluginManager;
         this.client = buildClient();
     }
 
@@ -193,6 +196,15 @@ public class HttpEngineService {
         }
         // 记录请求 URL, 供响应面板推导 <base href> 以渲染 HTML 中的相对资源
         response.setRequestUrl(url);
+
+        // 插件: 请求拦截器
+        if (pluginManager != null) {
+            try {
+                config = pluginManager.applyRequestInterceptors(config);
+            } catch (Exception e) {
+                log.error("请求拦截器执行失败", e);
+            }
+        }
 
         // 构建请求
         Request request;
@@ -313,6 +325,15 @@ public class HttpEngineService {
                 historyService.record(config, response);
             } catch (Exception e) {
                 log.warn("记录历史失败, 不影响请求结果", e);
+            }
+        }
+
+        // 插件: 响应处理器
+        if (pluginManager != null) {
+            try {
+                response = pluginManager.applyResponseProcessors(response);
+            } catch (Exception e) {
+                log.error("响应处理器执行失败", e);
             }
         }
 

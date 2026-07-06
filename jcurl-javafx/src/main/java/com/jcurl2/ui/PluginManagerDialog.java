@@ -17,9 +17,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 插件管理对话框 — 以表格展示已加载插件, 支持安装 / 卸载 / 重载 / 刷新。
@@ -37,7 +39,8 @@ import java.util.List;
  * 布局:
  * <pre>
  * ┌──────────────────────────────────────────────────────┐
- * │ [安装插件][卸载选中][重载选中][重载全部][刷新]          │ ← 工具栏
+ * │ [安装插件][卸载选中][启用选中][禁用选中][重载选中]      │
+ * │ [重载全部][编辑默认插件][刷新]                        │ ← 工具栏
  * ├──────────────────────────────────────────────────────┤
  * │ Name │ Version │ Status │ Description                 │
  * │  ... │   ...   │  ...   │   ...                       │
@@ -54,6 +57,49 @@ import java.util.List;
 public class PluginManagerDialog {
 
     private static final Logger log = LoggerFactory.getLogger(PluginManagerDialog.class);
+
+    /** 默认插件文件名 (位于插件目录下)。 */
+    private static final String DEFAULT_PLUGIN_FILE_NAME = "DefaultPlugin.java";
+
+    /** 默认插件 ID (类名, 用于判断是否已加载)。 */
+    private static final String DEFAULT_PLUGIN_ID = "DefaultPlugin";
+
+    /**
+     * 默认插件模板代码 — 当 {@code ~/.api-client/plugins/DefaultPlugin.java} 不存在时使用。
+     * 用户可在"编辑默认插件"对话框中修改后保存, 保存后会自动编译并加载 (需要 JDK 环境)。
+     */
+    private static final String DEFAULT_PLUGIN_TEMPLATE = """
+            import com.jcurl2.model.component.Header;
+            import com.jcurl2.model.dto.RequestConfig;
+            import com.jcurl2.model.dto.ResponseData;
+            import com.jcurl2.plugin.ExtensionPoint;
+            import com.jcurl2.plugin.JcurlPlugin;
+            import com.jcurl2.plugin.PluginContext;
+            import com.jcurl2.plugin.extension.RequestInterceptor;
+            import com.jcurl2.plugin.extension.ResponseInterceptor;
+
+            /**
+             * 默认插件模板 — 可在此处编写简单的插件逻辑。
+             * 保存后会自动编译并加载（需要 JDK 环境）。
+             */
+            @JcurlPlugin(name = "默认插件", description = "内置默认插件模板", version = "1.0.0", author = "Jcurl")
+            public class DefaultPlugin implements RequestInterceptor, ResponseInterceptor, ExtensionPoint {
+
+                @Override
+                public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
+                    // 在此处修改请求,例如添加请求头:
+                    // config.getHeaders().add(new Header("X-Custom", "value"));
+                    return config;
+                }
+
+                @Override
+                public ResponseData afterResponse(ResponseData response, RequestConfig config, PluginContext ctx) {
+                    // 在此处处理响应,例如记录日志:
+                    // ctx.log("info", "响应状态: " + response.getStatusCode());
+                    return response;
+                }
+            }
+            """;
 
     private final PluginService pluginService;
 
@@ -100,21 +146,29 @@ public class PluginManagerDialog {
         // 工具栏按钮
         Button installBtn = new Button("安装插件");
         Button unloadBtn = new Button("卸载选中");
+        Button enableBtn = new Button("启用选中");
+        Button disableBtn = new Button("禁用选中");
         Button reloadBtn = new Button("重载选中");
         Button reloadAllBtn = new Button("重载全部");
+        Button editDefaultBtn = new Button("编辑默认插件");
         Button refreshBtn = new Button("刷新");
-        Button[] actionButtons = {installBtn, unloadBtn, reloadBtn, reloadAllBtn, refreshBtn};
+        Button[] actionButtons = {installBtn, unloadBtn, enableBtn, disableBtn, reloadBtn,
+                reloadAllBtn, editDefaultBtn, refreshBtn};
         for (Button b : actionButtons) {
             b.getStyleClass().add("toolbar-button");
         }
 
         installBtn.setOnAction(e -> onInstall(owner, data, statusLabel, progress, actionButtons));
         unloadBtn.setOnAction(e -> onUnload(owner, table, data, statusLabel, progress, actionButtons));
+        enableBtn.setOnAction(e -> onEnable(owner, table, data, statusLabel, progress, actionButtons));
+        disableBtn.setOnAction(e -> onDisable(owner, table, data, statusLabel, progress, actionButtons));
         reloadBtn.setOnAction(e -> onReload(owner, table, data, statusLabel, progress, actionButtons));
         reloadAllBtn.setOnAction(e -> onReloadAll(owner, data, statusLabel, progress, actionButtons));
+        editDefaultBtn.setOnAction(e -> onEditDefault(owner, data, statusLabel, progress, actionButtons));
         refreshBtn.setOnAction(e -> refreshTable(data, statusLabel));
 
-        ToolBar toolbar = new ToolBar(installBtn, unloadBtn, reloadBtn, reloadAllBtn, refreshBtn);
+        ToolBar toolbar = new ToolBar(installBtn, unloadBtn, enableBtn, disableBtn, reloadBtn,
+                reloadAllBtn, editDefaultBtn, refreshBtn);
         toolbar.getStyleClass().add("env-toolbar");
 
         content.getChildren().addAll(toolbar, table, statusBar);
@@ -354,6 +408,191 @@ public class PluginManagerDialog {
                     + (ex != null && ex.getMessage() != null ? ex.getMessage() : "未知错误"));
         });
         new Thread(task, "plugin-reload-all").start();
+    }
+
+    /**
+     * 启用选中插件: 在后台 Task 中调用 {@link PluginService#enablePlugin(String)}。
+     */
+    private void onEnable(Window owner, TableView<Plugin> table, ObservableList<Plugin> data,
+                          Label statusLabel, ProgressIndicator progress, Button[] buttons) {
+        Plugin selected = table.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showWarning(owner, "请先选择要启用的插件");
+            return;
+        }
+        String pluginId = selected.getId();
+        if (pluginId == null || pluginId.isBlank()) {
+            showWarning(owner, "该插件没有有效 ID, 无法启用");
+            return;
+        }
+
+        setBusy(true, progress, statusLabel, "正在启用插件: " + safeName(selected) + " ...", buttons);
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                pluginService.enablePlugin(pluginId);
+                return null;
+            }
+        };
+        task.setOnSucceeded(e -> {
+            setBusy(false, progress, statusLabel, null, buttons);
+            refreshTable(data, statusLabel);
+            showInfo(owner, "插件已启用: " + safeName(selected));
+        });
+        task.setOnFailed(e -> {
+            setBusy(false, progress, statusLabel, null, buttons);
+            refreshTable(data, statusLabel);
+            Throwable ex = task.getException();
+            log.error("插件启用异常", ex);
+            showError(owner, "启用失败: "
+                    + (ex != null && ex.getMessage() != null ? ex.getMessage() : "未知错误"));
+        });
+        new Thread(task, "plugin-enable").start();
+    }
+
+    /**
+     * 禁用选中插件: 在后台 Task 中调用 {@link PluginService#disablePlugin(String)}。
+     */
+    private void onDisable(Window owner, TableView<Plugin> table, ObservableList<Plugin> data,
+                           Label statusLabel, ProgressIndicator progress, Button[] buttons) {
+        Plugin selected = table.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showWarning(owner, "请先选择要禁用的插件");
+            return;
+        }
+        String pluginId = selected.getId();
+        if (pluginId == null || pluginId.isBlank()) {
+            showWarning(owner, "该插件没有有效 ID, 无法禁用");
+            return;
+        }
+
+        setBusy(true, progress, statusLabel, "正在禁用插件: " + safeName(selected) + " ...", buttons);
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                pluginService.disablePlugin(pluginId);
+                return null;
+            }
+        };
+        task.setOnSucceeded(e -> {
+            setBusy(false, progress, statusLabel, null, buttons);
+            refreshTable(data, statusLabel);
+            showInfo(owner, "插件已禁用: " + safeName(selected));
+        });
+        task.setOnFailed(e -> {
+            setBusy(false, progress, statusLabel, null, buttons);
+            refreshTable(data, statusLabel);
+            Throwable ex = task.getException();
+            log.error("插件禁用异常", ex);
+            showError(owner, "禁用失败: "
+                    + (ex != null && ex.getMessage() != null ? ex.getMessage() : "未知错误"));
+        });
+        new Thread(task, "plugin-disable").start();
+    }
+
+    /**
+     * 编辑默认插件: 弹出代码编辑器对话框, 允许编辑 {@code DefaultPlugin.java} 源码并保存重载。
+     * <p>
+     * 流程:
+     * <ol>
+     *   <li>读取 {@code ~/.api-client/plugins/DefaultPlugin.java} 内容 (不存在则使用内置模板)</li>
+     *   <li>在 TextArea 中展示供用户编辑</li>
+     *   <li>"保存并重载": 写回文件, 若已加载则 {@link PluginService#reloadPlugin(String)},
+     *       否则 {@link PluginService#installPlugin(Path)} (后台 Task 执行编译加载)</li>
+     * </ol>
+     */
+    private void onEditDefault(Window owner, ObservableList<Plugin> data, Label statusLabel,
+                               ProgressIndicator progress, Button[] buttons) {
+        // 1. 确定默认插件文件路径
+        Path defaultPluginFile = pluginService.getPluginsDir().resolve(DEFAULT_PLUGIN_FILE_NAME);
+
+        // 2. 读取已有内容 (不存在则使用内置模板)
+        String initialContent;
+        try {
+            if (Files.exists(defaultPluginFile)) {
+                initialContent = Files.readString(defaultPluginFile);
+            } else {
+                initialContent = DEFAULT_PLUGIN_TEMPLATE;
+            }
+        } catch (Exception e) {
+            log.error("读取默认插件文件失败: {}", defaultPluginFile, e);
+            showError(owner, "读取默认插件文件失败: "
+                    + (e.getMessage() != null ? e.getMessage() : "未知错误"));
+            return;
+        }
+
+        // 3. 构建编辑对话框
+        Dialog<String> editDialog = new Dialog<>();
+        editDialog.setTitle("编辑默认插件");
+        editDialog.initOwner(owner);
+        editDialog.setHeaderText("编辑 DefaultPlugin.java 源码 (保存后自动编译加载)");
+
+        DialogPane editPane = editDialog.getDialogPane();
+        editPane.getStyleClass().add("plugin-dialog");
+        applyDarkStylesheet(editPane);
+
+        // 自定义按钮: 保存并重载 / 取消
+        ButtonType saveReloadType = new ButtonType("保存并重载", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelType = new ButtonType("取消", ButtonBar.ButtonData.CANCEL_CLOSE);
+        editPane.getButtonTypes().addAll(saveReloadType, cancelType);
+
+        TextArea codeArea = new TextArea(initialContent);
+        codeArea.setWrapText(false);
+        codeArea.setStyle("-fx-font-family: 'Consolas', 'Courier New', monospace; -fx-font-size: 12px;");
+        codeArea.setPrefSize(720, 480);
+        VBox.setVgrow(codeArea, Priority.ALWAYS);
+
+        VBox editContent = new VBox(8, codeArea);
+        editContent.setPadding(new Insets(12));
+        editContent.getStyleClass().add("plugin-dialog");
+        editPane.setContent(editContent);
+
+        // 返回编辑后的内容 (保存并重载时); 取消时返回 null
+        editDialog.setResultConverter(btn -> btn == saveReloadType ? codeArea.getText() : null);
+
+        Optional<String> result = editDialog.showAndWait();
+        if (result.isEmpty()) {
+            return; // 用户取消
+        }
+        String code = result.get();
+
+        // 4. 后台保存 + 编译加载
+        setBusy(true, progress, statusLabel, "正在保存并重载默认插件 ...", buttons);
+
+        Task<String> task = new Task<>() {
+            @Override
+            protected String call() throws Exception {
+                Files.createDirectories(pluginService.getPluginsDir());
+                Files.writeString(defaultPluginFile, code);
+                // 判断 DefaultPlugin 是否已加载
+                boolean loaded = pluginService.listPlugins().stream()
+                        .anyMatch(p -> DEFAULT_PLUGIN_ID.equals(p.getId()));
+                if (loaded) {
+                    pluginService.reloadPlugin(DEFAULT_PLUGIN_ID);
+                    return "reload";
+                } else {
+                    pluginService.installPlugin(defaultPluginFile);
+                    return "install";
+                }
+            }
+        };
+        task.setOnSucceeded(e -> {
+            setBusy(false, progress, statusLabel, null, buttons);
+            refreshTable(data, statusLabel);
+            String mode = task.getValue();
+            showInfo(owner, "默认插件已保存并" + ("reload".equals(mode) ? "重载" : "加载"));
+        });
+        task.setOnFailed(e -> {
+            setBusy(false, progress, statusLabel, null, buttons);
+            refreshTable(data, statusLabel);
+            Throwable ex = task.getException();
+            log.error("保存/重载默认插件失败", ex);
+            showError(owner, "保存或重载失败: "
+                    + (ex != null && ex.getMessage() != null ? ex.getMessage() : "未知错误"));
+        });
+        new Thread(task, "plugin-edit-default").start();
     }
 
     // ==================== 数据刷新与状态 ====================

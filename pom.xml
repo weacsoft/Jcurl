@@ -22,6 +22,7 @@
         <module>jcurl-core</module>
         <module>jcurl-javafx</module>
         <module>jcurl-swing</module>
+        <module>jcurl-plugin-demo</module>
     </modules>
 
     <properties>

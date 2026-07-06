@@ -34,7 +34,7 @@ class HttpEngineServiceTest {
     void setUp() throws IOException {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
-        service = new HttpEngineService(new ObjectMapper(), null, new CookieService());
+        service = new HttpEngineService(new ObjectMapper(), null, new CookieService(), null);
     }
 
     @AfterEach
