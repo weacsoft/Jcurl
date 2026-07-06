@@ -1,0 +1,19 @@
+spring:
+  main:
+    # 非 Web 模式, 不启动 Tomcat
+    web-application-type: none
+    # Swing 需要 non-headless 环境
+    headless: false
+    # 禁用 Banner (桌面应用不需要)
+    banner-mode: off
+
+# Jcurl 配置
+jcurl:
+  # 数据根目录 (用户目录下)
+  data-dir: ${user.home}/.api-client
+  # 插件目录
+  plugin-dir: ${user.home}/.api-client/plugins
+  # 默认请求超时 (秒)
+  default-timeout: 30
+  # 历史记录上限
+  history-limit: 500

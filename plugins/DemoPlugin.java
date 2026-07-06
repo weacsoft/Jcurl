@@ -1,13 +1,13 @@
-import com.jpostman2.model.component.Header;
-import com.jpostman2.model.dto.RequestConfig;
-import com.jpostman2.model.dto.ResponseData;
-import com.jpostman2.plugin.ExtensionPoint;
-import com.jpostman2.plugin.JPostmanPlugin;
-import com.jpostman2.plugin.PluginContext;
-import com.jpostman2.plugin.extension.MetricsCollectorExtension;
-import com.jpostman2.plugin.extension.RequestInterceptor;
-import com.jpostman2.plugin.extension.ResponseInterceptor;
-import com.jpostman2.plugin.extension.VariableFunctionExtension;
+import com.jcurl2.model.component.Header;
+import com.jcurl2.model.dto.RequestConfig;
+import com.jcurl2.model.dto.ResponseData;
+import com.jcurl2.plugin.ExtensionPoint;
+import com.jcurl2.plugin.JcurlPlugin;
+import com.jcurl2.plugin.PluginContext;
+import com.jcurl2.plugin.extension.MetricsCollectorExtension;
+import com.jcurl2.plugin.extension.RequestInterceptor;
+import com.jcurl2.plugin.extension.ResponseInterceptor;
+import com.jcurl2.plugin.extension.VariableFunctionExtension;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * JPostman 演示插件 — 展示四大扩展点的用法。
+ * Jcurl 演示插件 — 展示四大扩展点的用法。
  * <p>
  * 功能:
  * <ul>
@@ -30,11 +30,11 @@ import java.util.UUID;
  * <p>
  * 安装方法: 将此文件复制到 ~/.api-client/plugins/ 目录,或在插件管理对话框中安装。
  */
-@JPostmanPlugin(
+@JcurlPlugin(
         name = "演示插件",
         description = "展示请求拦截/响应拦截/变量函数/指标采集四大扩展点",
         version = "1.0.0",
-        author = "JPostman"
+        author = "Jcurl"
 )
 public class DemoPlugin implements RequestInterceptor, ResponseInterceptor,
         VariableFunctionExtension, MetricsCollectorExtension {

@@ -1,9 +1,0 @@
-spring:
-  main:
-    web-application-type: none
-
-jpostman:
-  data-dir: ${java.io.tmpdir}/api-client-test
-  plugin-dir: ${java.io.tmpdir}/api-client-test/plugins
-  default-timeout: 10
-  history-limit: 100

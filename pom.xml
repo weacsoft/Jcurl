@@ -5,23 +5,23 @@
     <modelVersion>4.0.0</modelVersion>
 
     <!--
-        JPostman 父 POM (聚合器)
+        Jcurl 父 POM (聚合器)
         - packaging = pom
         - 只管理公共属性与插件版本, 不指定 SpringBoot 版本
         - 各子模块自行通过 spring-boot-dependencies BOM 指定 SpringBoot 版本
-          (jpostman-core / jpostman-javafx 使用 3.2.5, jpostman-swing 使用 2.7.18)
+          (jcurl-core / jcurl-javafx 使用 3.2.5, jcurl-swing 使用 2.7.18)
     -->
-    <groupId>com.jpostman</groupId>
-    <artifactId>jpostman-parent</artifactId>
+    <groupId>com.jcurl</groupId>
+    <artifactId>jcurl-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>JPostman Parent</name>
-    <description>JPostman 多模块聚合父 POM</description>
+    <name>Jcurl Parent</name>
+    <description>Jcurl 多模块聚合父 POM</description>
 
     <modules>
-        <module>jpostman-core</module>
-        <module>jpostman-javafx</module>
-        <module>jpostman-swing</module>
+        <module>jcurl-core</module>
+        <module>jcurl-javafx</module>
+        <module>jcurl-swing</module>
     </modules>
 
     <properties>
