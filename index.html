@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jcurl - Documentation</title>
+<style>
+:root { --bg:#0d1117; --fg:#c9d1d9; --card:#161b22; --border:#30363d; --accent:#58a6ff; --code:#1e1e1e; --green:#3fb950; --orange:#d29922; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--fg);line-height:1.6}
+.hero{text-align:center;padding:60px 20px;background:linear-gradient(135deg,#0d1117,#161b22);border-bottom:1px solid var(--border)}
+.hero h1{font-size:3rem;color:var(--accent);margin-bottom:10px}
+.hero p{font-size:1.2rem;color:var(--fg);opacity:0.8}
+.badges{margin-top:15px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.badge{padding:3px 12px;border-radius:20px;font-size:0.85rem;border:1px solid var(--border)}
+.badge.green{color:var(--green);border-color:var(--green)}
+.badge.blue{color:var(--accent);border-color:var(--accent)}
+.badge.orange{color:var(--orange);border-color:var(--orange)}
+.container{max-width:900px;margin:0 auto;padding:40px 20px}
+.lang-toggle{text-align:center;margin:20px 0}
+.lang-toggle button{padding:8px 20px;margin:0 5px;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:6px;cursor:pointer;font-size:0.95rem}
+.lang-toggle button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+section{margin-bottom:40px}
+h2{font-size:1.6rem;color:var(--accent);margin-bottom:15px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+h3{font-size:1.2rem;color:var(--fg);margin:20px 0 10px}
+p{margin-bottom:12px}
+code{background:var(--code);padding:2px 6px;border-radius:4px;font-family:'Consolas',monospace;font-size:0.9rem;color:#ce9178}
+pre{background:var(--code);padding:16px;border-radius:8px;overflow-x:auto;margin:12px 0;border:1px solid var(--border)}
+pre code{background:none;padding:0;color:#d4d4d4}
+table{width:100%;border-collapse:collapse;margin:15px 0}
+th,td{padding:10px 12px;text-align:left;border:1px solid var(--border)}
+th{background:var(--card);color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin:15px 0}
+.card h3{color:var(--accent)}
+.tip{border-left:3px solid var(--green);padding-left:15px;margin:15px 0;color:var(--green)}
+.warn{border-left:3px solid var(--orange);padding-left:15px;margin:15px 0;color:var(--orange)}
+.lang{display:none}
+.lang.active{display:block}
+.footer{text-align:center;padding:30px;border-top:1px solid var(--border);color:var(--fg);opacity:0.5}
+</style>
+</head>
+<body>
+
+<div class="hero">
+<h1>Jcurl</h1>
+<p>A lightweight, cross-platform HTTP API client — CLI + JavaFX + Swing</p>
+<div class="badges">
+<span class="badge green">JDK 17+</span>
+<span class="badge blue">SpringBoot 3.2</span>
+<span class="badge blue">JavaFX 21</span>
+<span class="badge orange">Swing (Win7+)</span>
+</div>
+</div>
+
+<div class="container">
+
+<div class="lang-toggle">
+<button id="btn-en" class="active" onclick="showLang('en')">English</button>
+<button id="btn-zh" onclick="showLang('zh')">中文</button>
+</div>
+
+<!-- ENGLISH -->
+<div id="lang-en" class="lang active">
+
+<section>
+<h2>Overview</h2>
+<p>Jcurl is a desktop HTTP API client inspired by Postman, with a curl-compatible CLI mode. It features a modular architecture with three independently buildable modules: a core backend with CLI, a modern JavaFX GUI, and a legacy Swing GUI for Windows 7 compatibility.</p>
+</section>
+
+<section>
+<h2>Installation</h2>
+<h3>Build from Source</h3>
+<pre><code>git clone https://github.com/weacsoft/Jcurl.git
+cd Jcurl
+mvn clean package -DskipTests</code></pre>
+<h3>Requirements</h3>
+<table>
+<tr><th>Module</th><th>JDK</th><th>Notes</th></tr>
+<tr><td>jcurl-core (CLI)</td><td>17+</td><td>Set <code>JAVA_HOME</code></td></tr>
+<tr><td>jcurl-javafx</td><td>17+</td><td>Win11 recommended</td></tr>
+<tr><td>jcurl-swing</td><td>8+</td><td>Win7 compatible</td></tr>
+</table>
+</section>
+
+<section>
+<h2>CLI Mode (curl-compatible)</h2>
+<p>The CLI mode supports 30+ curl options, making it a drop-in replacement for most curl use cases.</p>
+
+<h3>Basic Usage</h3>
+<pre><code># Simple GET
+java -jar jcurl-core.jar https://httpbin.org/get
+
+# GET with response headers (-i)
+java -jar jcurl-core.jar -i https://httpbin.org/get
+
+# POST with JSON body
+java -jar jcurl-core.jar -X POST \
+  -d '{"name":"test","value":123}' \
+  -H "Content-Type: application/json" \
+  https://httpbin.org/post</code></pre>
+
+<h3>Authentication</h3>
+<pre><code># Basic auth
+java -jar jcurl-core.jar -u user:password https://api.example.com/data
+
+# Bearer token
+java -jar jcurl-core.jar --bearer "eyJhbGciOi..." https://api.example.com/secure</code></pre>
+
+<h3>File Upload</h3>
+<pre><code># Multipart form upload
+java -jar jcurl-core.jar -F "file=@photo.jpg" -F "name=hello" https://httpbin.org/post
+
+# PUT upload
+java -jar jcurl-core.jar -T largefile.zip https://api.example.com/upload</code></pre>
+
+<h3>Output Control</h3>
+<pre><code># Save to file (-o) + custom format (-w)
+java -jar jcurl-core.jar -s -o response.json \
+  -w "HTTP %{http_code} | %{time_total}s | %{size_download} bytes\n" \
+  https://httpbin.org/get
+
+# Silent mode (-s) + include headers (-i)
+java -jar jcurl-core.jar -si https://httpbin.org/get</code></pre>
+
+<h3>Advanced Options</h3>
+<table>
+<tr><th>Option</th><th>Description</th></tr>
+<tr><td><code>-L</code></td><td>Follow redirects</td></tr>
+<tr><td><code>-k</code></td><td>Skip SSL verification</td></tr>
+<tr><td><code>--compressed</code></td><td>Request gzip/deflate encoding</td></tr>
+<tr><td><code>-b "key=val"</code></td><td>Send cookies</td></tr>
+<tr><td><code>-A "Agent"</code></td><td>Set User-Agent</td></tr>
+<tr><td><code>-e "url"</code></td><td>Set Referer</td></tr>
+<tr><td><code>--connect-timeout 10</code></td><td>Connection timeout (seconds)</td></tr>
+<tr><td><code>-m 30</code></td><td>Max request time (seconds)</td></tr>
+<tr><td><code>-G</code></td><td>Move -d data to URL query params</td></tr>
+<tr><td><code>--resolve host:port:ip</code></td><td>Custom DNS resolution</td></tr>
+</table>
+
+<h3>Write-out Variables</h3>
+<table>
+<tr><th>Variable</th><th>Description</th></tr>
+<tr><td><code>%{http_code}</code></td><td>HTTP status code</td></tr>
+<tr><td><code>%{time_total}</code></td><td>Total time (seconds)</td></tr>
+<tr><td><code>%{size_download}</code></td><td>Download size (bytes)</td></tr>
+<tr><td><code>%{content_type}</code></td><td>Response Content-Type</td></tr>
+<tr><td><code>%{url_effective}</code></td><td>Final URL (after redirects)</td></tr>
+</table>
+</section>
+
+<section>
+<h2>JavaFX GUI Guide</h2>
+<div class="card">
+<h3>Launching</h3>
+<pre><code>java --add-modules jdk.compiler -jar jcurl-javafx/target/jcurl-javafx-0.1.0-SNAPSHOT.jar</code></pre>
+</div>
+<h3>Key Features</h3>
+<p><strong>Syntax Highlighting:</strong> JSON, XML, and HTML responses are automatically formatted and color-coded using RichTextFX.</p>
+<p><strong>Variable Auto-completion:</strong> Type <code>{{</code> in the URL field or body editor to get a popup with available environment variables and built-in functions.</p>
+<p><strong>Cookie Management:</strong> Cookies are automatically isolated per collection. Set-Cookie headers are parsed and stored automatically.</p>
+<p><strong>Auto Headers:</strong> 6 default headers are auto-merged. Each header has a checkbox to individually enable/disable it.</p>
+<p><strong>Drag & Drop:</strong> Reorder requests and folders in the collection tree by dragging.</p>
+<p><strong>Plugin Manager:</strong> Install, uninstall, and reload plugins from the UI. Plugin operations run in background threads.</p>
+</section>
+
+<section>
+<h2>Swing GUI Guide (Win7 Compatible)</h2>
+<div class="card">
+<h3>Launching</h3>
+<pre><code>java -jar jcurl-swing/target/jcurl-swing-0.1.0-SNAPSHOT.jar</code></pre>
+</div>
+<p>The Swing GUI uses FlatLaf for a modern look while maintaining Windows 7 compatibility. It requires only JDK 8+.</p>
+</section>
+
+<section>
+<h2>Plugin Development</h2>
+<p>Jcurl supports 4 extension points. Create a <code>.java</code> file implementing any of them:</p>
+
+<div class="card">
+<h3>1. RequestInterceptor</h3>
+<p>Modify requests before they are sent. Add headers, log requests, transform bodies.</p>
+<pre><code>@Override
+public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
+    config.getHeaders().add(new Header("X-Request-Id", UUID.randomUUID().toString()));
+    ctx.log("info", "Sending to: " + config.getUrl());
+    return config;
+}</code></pre>
+</div>
+
+<div class="card">
+<h3>2. ResponseInterceptor</h3>
+<p>Process responses after they are received. Extract tokens, log metrics, modify headers.</p>
+<pre><code>@Override
+public ResponseData afterResponse(ResponseData response, RequestConfig config, PluginContext ctx) {
+    ctx.log("info", "Got: " + response.getStatusCode() + " in " + response.getTiming().getTotalMs() + "ms");
+    return response;
+}</code></pre>
+</div>
+
+<div class="card">
+<h3>3. VariableFunctionExtension</h3>
+<p>Register custom <code>{{$function}}</code> variables for use in URLs and bodies.</p>
+<pre><code>@Override
+public List<String> getFunctionNames(PluginContext ctx) {
+    return List.of("md5", "base64");
+}
+
+@Override
+public String executeFunction(String name, String args, PluginContext ctx) {
+    if ("md5".equals(name)) return md5(args);
+    if ("base64".equals(name)) return Base64.getEncoder().encodeToString(args.getBytes());
+    return null;
+}</code></pre>
+</div>
+
+<div class="card">
+<h3>4. MetricsCollectorExtension</h3>
+<p>Collect custom metrics during performance testing.</p>
+<pre><code>@Override
+public Map<String, Double> collectMetrics(RequestConfig config, ResponseData response, PluginContext ctx) {
+    Map<String, Double> m = new HashMap<>();
+    m.put("response_kb", response.getSize() / 1024.0);
+    m.put("is_success", response.getStatusCode() < 400 ? 1.0 : 0.0);
+    return m;
+}</code></pre>
+</div>
+
+<div class="tip">
+<strong>Installation:</strong> Copy your <code>.java</code> file to <code>~/.api-client/plugins/</code> or use the Plugin Manager dialog. Plugins are compiled at runtime — no pre-compilation needed.
+</div>
+</section>
+
+<section>
+<h2>Environment Variables</h2>
+<p>Use <code>{{variable_name}}</code> syntax in URLs, headers, and bodies. Built-in dynamic functions:</p>
+<table>
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td><code>{{$timestamp}}</code></td><td>Current Unix timestamp</td></tr>
+<tr><td><code>{{$uuid}}</code></td><td>Random UUID</td></tr>
+<tr><td><code>{{$randomInt}}</code></td><td>Random integer</td></tr>
+<tr><td><code>{{$datetime}}</code></td><td>Current ISO datetime</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Import / Export</h2>
+<p>Jcurl supports importing from and exporting to multiple formats:</p>
+<ul>
+<li><strong>Postman v2.1</strong> — Full collection import/export</li>
+<li><strong>OpenAPI 3.0</strong> — Import API definitions as collections</li>
+<li><strong>cURL</strong> — Import cURL commands as requests</li>
+</ul>
+</section>
+
+</div>
+
+<!-- CHINESE -->
+<div id="lang-zh" class="lang">
+
+<section>
+<h2>项目简介</h2>
+<p>Jcurl 是一个受 Postman 启发的桌面 HTTP API 客户端，同时提供 curl 兼容的命令行模式。采用模块化架构，包含三个可独立编译的模块：核心后端（含 CLI）、JavaFX 图形界面、以及兼容 Windows 7 的 Swing 图形界面。</p>
+</section>
+
+<section>
+<h2>安装</h2>
+<h3>从源码编译</h3>
+<pre><code>git clone https://github.com/weacsoft/Jcurl.git
+cd Jcurl
+mvn clean package -DskipTests</code></pre>
+<h3>环境要求</h3>
+<table>
+<tr><th>模块</th><th>JDK</th><th>说明</th></tr>
+<tr><td>jcurl-core (CLI)</td><td>17+</td><td>需设置 <code>JAVA_HOME</code></td></tr>
+<tr><td>jcurl-javafx</td><td>17+</td><td>推荐 Win11</td></tr>
+<tr><td>jcurl-swing</td><td>8+</td><td>兼容 Win7</td></tr>
+</table>
+</section>
+
+<section>
+<h2>CLI 命令行模式 (curl 兼容)</h2>
+<p>CLI 模式支持 30+ curl 选项，可作为大部分 curl 场景的替代品。</p>
+
+<h3>基本用法</h3>
+<pre><code># 简单 GET
+java -jar jcurl-core.jar https://httpbin.org/get
+
+# GET 并显示响应头 (-i)
+java -jar jcurl-core.jar -i https://httpbin.org/get
+
+# POST JSON
+java -jar jcurl-core.jar -X POST \
+  -d '{"name":"test","value":123}' \
+  -H "Content-Type: application/json" \
+  https://httpbin.org/post</code></pre>
+
+<h3>认证</h3>
+<pre><code># Basic 认证
+java -jar jcurl-core.jar -u user:password https://api.example.com/data
+
+# Bearer Token
+java -jar jcurl-core.jar --bearer "eyJhbGciOi..." https://api.example.com/secure</code></pre>
+
+<h3>文件上传</h3>
+<pre><code># Multipart 表单上传
+java -jar jcurl-core.jar -F "file=@photo.jpg" -F "name=hello" https://httpbin.org/post
+
+# PUT 上传
+java -jar jcurl-core.jar -T largefile.zip https://api.example.com/upload</code></pre>
+
+<h3>输出控制</h3>
+<pre><code># 保存到文件 (-o) + 自定义格式 (-w)
+java -jar jcurl-core.jar -s -o response.json \
+  -w "HTTP %{http_code} | %{time_total}s | %{size_download} 字节\n" \
+  https://httpbin.org/get
+
+# 静默模式 (-s) + 包含响应头 (-i)
+java -jar jcurl-core.jar -si https://httpbin.org/get</code></pre>
+
+<h3>高级选项</h3>
+<table>
+<tr><th>选项</th><th>说明</th></tr>
+<tr><td><code>-L</code></td><td>跟随重定向</td></tr>
+<tr><td><code>-k</code></td><td>跳过 SSL 验证</td></tr>
+<tr><td><code>--compressed</code></td><td>请求 gzip/deflate 压缩</td></tr>
+<tr><td><code>-b "key=val"</code></td><td>发送 Cookie</td></tr>
+<tr><td><code>-A "Agent"</code></td><td>设置 User-Agent</td></tr>
+<tr><td><code>-e "url"</code></td><td>设置 Referer</td></tr>
+<tr><td><code>--connect-timeout 10</code></td><td>连接超时 (秒)</td></tr>
+<tr><td><code>-m 30</code></td><td>最大请求时间 (秒)</td></tr>
+<tr><td><code>-G</code></td><td>将 -d 数据转为 URL 查询参数</td></tr>
+<tr><td><code>--resolve host:port:ip</code></td><td>自定义 DNS 解析</td></tr>
+</table>
+
+<h3>write-out 变量</h3>
+<table>
+<tr><th>变量</th><th>说明</th></tr>
+<tr><td><code>%{http_code}</code></td><td>HTTP 状态码</td></tr>
+<tr><td><code>%{time_total}</code></td><td>总耗时 (秒)</td></tr>
+<tr><td><code>%{size_download}</code></td><td>下载大小 (字节)</td></tr>
+<tr><td><code>%{content_type}</code></td><td>响应 Content-Type</td></tr>
+<tr><td><code>%{url_effective}</code></td><td>最终 URL (重定向后)</td></tr>
+</table>
+</section>
+
+<section>
+<h2>JavaFX 图形界面指南</h2>
+<div class="card">
+<h3>启动</h3>
+<pre><code>java --add-modules jdk.compiler -jar jcurl-javafx/target/jcurl-javafx-0.1.0-SNAPSHOT.jar</code></pre>
+</div>
+<h3>核心功能</h3>
+<p><strong>语法高亮：</strong>JSON、XML、HTML 响应自动格式化并通过 RichTextFX 着色显示。</p>
+<p><strong>变量自动补全：</strong>在 URL 输入框或 body 编辑器中输入 <code>{{</code> 即可弹出补全列表，包含环境变量和内置动态函数。</p>
+<p><strong>Cookie 管理：</strong>Cookie 按集合隔离，Set-Cookie 响应头自动解析并存储，后续请求自动携带。</p>
+<p><strong>自动请求头：</strong>6 个默认头自动合并，每个头都有独立 CheckBox 可单独启用/禁用。</p>
+<p><strong>拖拽排序：</strong>在集合树中拖拽请求和文件夹即可重新排序。</p>
+<p><strong>插件管理：</strong>从界面安装、卸载、重载插件，所有操作在后台线程执行不阻塞 UI。</p>
+</section>
+
+<section>
+<h2>Swing 图形界面指南 (Win7 兼容)</h2>
+<div class="card">
+<h3>启动</h3>
+<pre><code>java -jar jcurl-swing/target/jcurl-swing-0.1.0-SNAPSHOT.jar</code></pre>
+</div>
+<p>Swing 界面使用 FlatLaf 实现现代外观，同时保持 Windows 7 兼容性。仅需 JDK 8+。</p>
+</section>
+
+<section>
+<h2>插件开发</h2>
+<p>Jcurl 支持 4 大扩展点。创建一个 <code>.java</code> 文件实现任意扩展点即可：</p>
+
+<div class="card">
+<h3>1. 请求拦截器 (RequestInterceptor)</h3>
+<p>在请求发送前修改。可添加请求头、记录日志、转换请求体。</p>
+<pre><code>@Override
+public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
+    config.getHeaders().add(new Header("X-Request-Id", UUID.randomUUID().toString()));
+    ctx.log("info", "发送到: " + config.getUrl());
+    return config;
+}</code></pre>
+</div>
+
+<div class="card">
+<h3>2. 响应拦截器 (ResponseInterceptor)</h3>
+<p>在响应接收后处理。可提取 token、记录指标、修改响应头。</p>
+<pre><code>@Override
+public ResponseData afterResponse(ResponseData response, RequestConfig config, PluginContext ctx) {
+    ctx.log("info", "收到: " + response.getStatusCode() + " 耗时 " + response.getTiming().getTotalMs() + "ms");
+    return response;
+}</code></pre>
+</div>
+
+<div class="card">
+<h3>3. 变量函数扩展 (VariableFunctionExtension)</h3>
+<p>注册自定义 <code>{{$function}}</code> 变量，可在 URL 和 body 中使用。</p>
+<pre><code>@Override
+public List<String> getFunctionNames(PluginContext ctx) {
+    return List.of("md5", "base64");
+}
+
+@Override
+public String executeFunction(String name, String args, PluginContext ctx) {
+    if ("md5".equals(name)) return md5(args);
+    if ("base64".equals(name)) return Base64.getEncoder().encodeToString(args.getBytes());
+    return null;
+}</code></pre>
+</div>
+
+<div class="card">
+<h3>4. 指标采集扩展 (MetricsCollectorExtension)</h3>
+<p>在性能测试中采集自定义指标。</p>
+<pre><code>@Override
+public Map<String, Double> collectMetrics(RequestConfig config, ResponseData response, PluginContext ctx) {
+    Map<String, Double> m = new HashMap<>();
+    m.put("response_kb", response.getSize() / 1024.0);
+    m.put("is_success", response.getStatusCode() < 400 ? 1.0 : 0.0);
+    return m;
+}</code></pre>
+</div>
+
+<div class="tip">
+<strong>安装方式：</strong>将 <code>.java</code> 文件复制到 <code>~/.api-client/plugins/</code> 目录，或通过插件管理对话框安装。插件在运行时编译，无需预编译。
+</div>
+</section>
+
+<section>
+<h2>环境变量</h2>
+<p>在 URL、请求头、请求体中使用 <code>{{variable_name}}</code> 语法。内置动态函数：</p>
+<table>
+<tr><th>函数</th><th>说明</th></tr>
+<tr><td><code>{{$timestamp}}</code></td><td>当前 Unix 时间戳</td></tr>
+<tr><td><code>{{$uuid}}</code></td><td>随机 UUID</td></tr>
+<tr><td><code>{{$randomInt}}</code></td><td>随机整数</td></tr>
+<tr><td><code>{{$datetime}}</code></td><td>当前 ISO 日期时间</td></tr>
+</table>
+</section>
+
+<section>
+<h2>导入 / 导出</h2>
+<p>Jcurl 支持多种格式的导入和导出：</p>
+<ul>
+<li><strong>Postman v2.1</strong> — 完整集合导入/导出</li>
+<li><strong>OpenAPI 3.0</strong> — 导入 API 定义为集合</li>
+<li><strong>cURL</strong> — 导入 cURL 命令为请求</li>
+</ul>
+</section>
+
+</div>
+
+</div>
+
+<div class="footer">
+<p>Jcurl — MIT License — <a href="https://github.com/weacsoft/Jcurl" style="color:var(--accent)">GitHub Repository</a></p>
+</div>
+
+<script>
+function showLang(lang) {
+    document.querySelectorAll('.lang').forEach(el => el.classList.remove('active'));
+    document.getElementById('lang-' + lang).classList.add('active');
+    document.querySelectorAll('.lang-toggle button').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + lang).classList.add('active');
+}
+</script>
+</body>
+</html>
