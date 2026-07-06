@@ -85,12 +85,17 @@ public class PluginService {
                     + "如需启用源码插件,请使用 JDK 启动: java --add-modules jdk.compiler -jar xxx.jar");
         }
 
-        try {
-            int count = pluginManager.loadAll();
-            log.info("插件系统初始化完成: {} 个插件已加载", count);
-        } catch (Exception e) {
-            log.error("插件系统初始化失败", e);
-        }
+        // 异步加载插件,不阻塞 Spring 启动和 UI 显示
+        Thread pluginThread = new Thread(() -> {
+            try {
+                int count = pluginManager.loadAll();
+                log.info("插件系统初始化完成: {} 个插件已加载", count);
+            } catch (Exception e) {
+                log.error("插件系统初始化失败", e);
+            }
+        }, "plugin-loader");
+        pluginThread.setDaemon(true);
+        pluginThread.start();
     }
 
     // ==================== 请求拦截 ====================

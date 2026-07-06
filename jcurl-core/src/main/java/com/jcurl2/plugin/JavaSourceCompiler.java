@@ -49,7 +49,7 @@ public class JavaSourceCompiler {
     private static final Logger log = LoggerFactory.getLogger(JavaSourceCompiler.class);
 
     private final JavaCompiler compiler;
-    private final List<String> compileOptions;
+    private volatile List<String> compileOptions;
     private final boolean available;
 
     public JavaSourceCompiler() {
@@ -61,13 +61,29 @@ public class JavaSourceCompiler {
             this.compileOptions = List.of();
         } else {
             this.available = true;
-            this.compileOptions = buildCompileOptions();
+            // 延迟构建 compileOptions: 只在有 .java 插件需要编译时才提取 fat jar classpath
+            this.compileOptions = null;
         }
     }
 
     /** 插件编译器是否可用 */
     public boolean isAvailable() {
         return available;
+    }
+
+    /**
+     * 懒加载编译选项。只在第一次实际编译时才提取 fat jar classpath,
+     * 避免在没有 .java 插件时浪费 3-4 秒提取 classpath。
+     */
+    private List<String> getCompileOptions() {
+        if (compileOptions == null) {
+            synchronized (this) {
+                if (compileOptions == null) {
+                    compileOptions = buildCompileOptions();
+                }
+            }
+        }
+        return compileOptions;
     }
 
     /**
@@ -90,7 +106,7 @@ public class JavaSourceCompiler {
                 compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8));
 
         JavaCompiler.CompilationTask task = compiler.getTask(
-                null, fileManager, diagnostics, compileOptions, null, sourceObjects);
+                null, fileManager, diagnostics, getCompileOptions(), null, sourceObjects);
 
         boolean success = task.call();
 
@@ -159,39 +175,72 @@ public class JavaSourceCompiler {
      */
     private String extractFatJarClasspath() {
         try {
-            // 获取当前类所在的 jar 位置
             String jarPath = getJarLocation();
             if (jarPath == null) return null;
-
-            // 检查是否是 fat jar(包含 BOOT-INF 目录)
             if (!isFatJar(jarPath)) return null;
 
+            // 缓存目录: ~/.api-client/classpath-cache/
+            Path cacheDir = Path.of(System.getProperty("user.home"), ".api-client", "classpath-cache");
+            Path cacheMarker = cacheDir.resolve("cache.info");
+
+            // 检查缓存是否有效 (fat jar 未修改则复用)
+            long jarLastModified = new File(jarPath).lastModified();
+            long jarSize = new File(jarPath).length();
+            if (Files.exists(cacheMarker) && Files.exists(cacheDir.resolve("lib"))) {
+                try {
+                    List<String> markerLines = Files.readAllLines(cacheMarker);
+                    if (markerLines.size() >= 2) {
+                        long cachedTime = Long.parseLong(markerLines.get(0));
+                        long cachedSize = Long.parseLong(markerLines.get(1));
+                        if (cachedTime == jarLastModified && cachedSize == jarSize) {
+                            // 缓存有效,直接构建 classpath 字符串
+                            List<String> entries = new ArrayList<>();
+                            Path classesDir = cacheDir.resolve("classes");
+                            if (Files.exists(classesDir)) entries.add(classesDir.toAbsolutePath().toString());
+                            Path libDir = cacheDir.resolve("lib");
+                            try (Stream<Path> jars = Files.list(libDir)) {
+                                jars.filter(p -> p.toString().endsWith(".jar"))
+                                        .forEach(p -> entries.add(p.toAbsolutePath().toString()));
+                            }
+                            log.info("fat jar classpath 缓存命中: {} 个条目", entries.size());
+                            return String.join(File.pathSeparator, entries);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("缓存读取失败,将重新提取", e);
+                }
+            }
+
+            // 缓存无效或不存在,重新提取
             log.info("检测到 Spring Boot fat jar,正在提取 classpath 供插件编译使用...");
 
-            // 创建临时目录
-            Path tempDir = Files.createTempDirectory("jcurl-classpath");
-            tempDir.toFile().deleteOnExit();
+            // 清理旧缓存
+            if (Files.exists(cacheDir)) {
+                try (Stream<Path> walk = Files.walk(cacheDir)) {
+                    walk.sorted(java.util.Comparator.reverseOrder())
+                            .forEach(p -> {
+                                try { Files.deleteIfExists(p); } catch (IOException ignored) {}
+                            });
+                }
+            }
+            Files.createDirectories(cacheDir);
 
             List<String> classpathEntries = new ArrayList<>();
 
-            // 使用 ZipFileSystem 读取 fat jar
             URI jarUri = URI.create("jar:" + new File(jarPath).toURI());
             try (java.nio.file.FileSystem fs = FileSystems.newFileSystem(jarUri, Map.of())) {
 
-                // 提取 BOOT-INF/classes/ 到临时目录
                 Path classesInJar = fs.getPath("BOOT-INF/classes");
                 if (Files.exists(classesInJar)) {
-                    Path classesDir = tempDir.resolve("classes");
+                    Path classesDir = cacheDir.resolve("classes");
                     Files.createDirectories(classesDir);
                     copyDirectory(classesInJar, classesDir);
                     classpathEntries.add(classesDir.toAbsolutePath().toString());
-                    log.debug("已提取 BOOT-INF/classes 到 {}", classesDir);
                 }
 
-                // 提取 BOOT-INF/lib/*.jar 到临时目录
                 Path libInJar = fs.getPath("BOOT-INF/lib");
                 if (Files.exists(libInJar)) {
-                    Path libDir = tempDir.resolve("lib");
+                    Path libDir = cacheDir.resolve("lib");
                     Files.createDirectories(libDir);
                     try (Stream<Path> jars = Files.list(libInJar)) {
                         jars.filter(p -> p.toString().endsWith(".jar"))
@@ -199,16 +248,18 @@ public class JavaSourceCompiler {
                                     try {
                                         String name = jar.getFileName().toString();
                                         Path dest = libDir.resolve(name);
-                                        Files.copy(jar, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                                        Files.copy(jar, dest, StandardCopyOption.REPLACE_EXISTING);
                                         classpathEntries.add(dest.toAbsolutePath().toString());
                                     } catch (IOException e) {
                                         log.warn("提取依赖 jar 失败: {}", jar, e);
                                     }
                                 });
                     }
-                    log.debug("已提取 {} 个依赖 jar 到 {}", classpathEntries.size() - 1, libDir);
                 }
             }
+
+            // 写入缓存标记
+            Files.writeString(cacheMarker, jarLastModified + "\n" + jarSize);
 
             String result = String.join(File.pathSeparator, classpathEntries);
             log.info("fat jar classpath 提取完成: {} 个条目", classpathEntries.size());
