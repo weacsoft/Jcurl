@@ -25,7 +25,7 @@ import java.util.Map;
  * 真正"发送什么头"由 {@link HttpEngineService} 在发送时调用本类合并得出,
  * 界面层只负责采集用户输入与展示, 从而实现核心/界面分离。
  * <p>
- * 移植自 Swing 版 Jcurl, 适配 Jcurl2 的 Header / AuthConfig / RequestBody 模型。
+ * 移植自 Swing 版 Jcurl, 适配 core 的 Header / AuthConfig / RequestBody 模型。
  */
 @Component
 public class DefaultHeaderProvider {

@@ -14,11 +14,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 环境与变量管理服务 — v2 架构。
+ * 环境与变量管理服务。
  * <p>
  * 基于 JSON 文件存储, 管理环境(EnvironmentFile)与全局变量。
  * <p>
- * v2 变量作用域 (4级优先级, 从高到低):
+ * 变量作用域 (4级优先级, 从高到低):
  * 1. 本地变量 (Local) — 仅在请求执行期间临时生成, 不持久化
  * 2. 环境变量 (Environment) — 绑定当前激活环境
  * 3. 集合变量 (Collection) — 绑定请求所属集合

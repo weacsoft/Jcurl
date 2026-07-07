@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Cookie 跟随项目 (集合) 走: 每个集合独立维护一份 Cookie 存储, 切换集合时切换上下文,
  * 并持久化到 {@code <数据目录>/cookies/<collectionId>.json}。
  * <p>
- * 移植自 Swing 版 Jcurl, 适配 Jcurl2 的 Header 列表模型与 AppProperties 配置。
+ * 移植自 Swing 版 Jcurl, 适配 core 的 Header 列表模型与 AppProperties 配置。
  */
 @Service
 public class CookieService {

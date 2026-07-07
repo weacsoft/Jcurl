@@ -44,7 +44,7 @@ import java.util.List;
  * 非 Spring 管理的组件, 由 MainFrame 通过 new 创建, 构造时传入依赖。
  * 模态显示 (setModal(true)), 关闭后由调用方刷新环境下拉框。
  * <p>
- * v2 适配: 环境以 EnvironmentFile 表示, 变量以 List&lt;Variable&gt; 存储,
+ * 适配: 环境以 EnvironmentFile 表示, 变量以 List&lt;Variable&gt; 存储,
  * 变量表格包含启用/Key/Value/Secret 四列, 不再使用 ObjectMapper 进行 JSON 序列化。
  * <p>
  * 布局:

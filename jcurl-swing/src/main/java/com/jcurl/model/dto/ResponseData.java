@@ -6,7 +6,7 @@ import java.util.Map;
 /**
  * 响应数据 DTO — 一次请求执行返回的结果。
  * <p>
- * v2 增强: 新增性能指标 (DNS 解析时间、TCP 连接时间、首字节时间 TTFB)、
+ * 增强: 新增性能指标 (DNS 解析时间、TCP 连接时间、首字节时间 TTFB)、
  * 协议版本、响应体原始字节数组 (用于图片预览)。
  * <p>
  * 网络错误时 statusCode 为 0, errorMessage 填充错误信息。

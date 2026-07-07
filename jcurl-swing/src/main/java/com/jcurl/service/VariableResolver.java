@@ -17,7 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 变量解析器 — v2 架构。
+ * 变量解析器。
  * <p>
  * 支持 4 级变量作用域 (从高到低):
  * 1. 本地变量 (Local) — 通过 resolve 方法临时注入

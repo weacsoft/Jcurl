@@ -61,7 +61,7 @@ public class JsonStoreService {
             for (String subDir : SUB_DIRS) {
                 Files.createDirectories(baseDir.resolve(subDir));
             }
-            log.info("Jcurl2 数据目录已就绪: {}", baseDir);
+            log.info("Jcurl 数据目录已就绪: {}", baseDir);
         } catch (IOException e) {
             log.error("初始化数据目录失败: {}", baseDir, e);
             throw new RuntimeException("无法初始化数据目录: " + baseDir, e);

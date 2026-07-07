@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 集合管理服务 — v2 架构。
+ * 集合管理服务。
  * <p>
  * 基于 JSON 文件存储, 管理集合(Collection)的 CRUD 操作,
  * 以及集合内部树形结构(Folder/Request)的增删改查。

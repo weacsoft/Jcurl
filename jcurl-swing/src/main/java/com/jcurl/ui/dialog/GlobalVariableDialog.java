@@ -35,7 +35,7 @@ import java.util.List;
  * 非 Spring 管理的组件, 由 MainFrame 通过 new 创建, 构造时传入依赖。
  * 模态显示 (setModal(true))。
  * <p>
- * v2 适配: 变量以 Variable 表示, 表格包含启用/Key/Value/Secret 四列,
+ * 适配: 变量以 Variable 表示, 表格包含启用/Key/Value/Secret 四列,
  * Save All 策略: 收集表格数据为 List&lt;Variable&gt;, 调用 saveGlobalVariables 全量保存。
  * <p>
  * 布局:

@@ -75,9 +75,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 应用主窗口 — v2 架构。
+ * 应用主窗口。
  * <p>
- * v2 变更:
+ * 架构变更:
  * <ul>
  *   <li>不再注入 ProjectService / RequestItemService (JPA 实体已移除)</li>
  *   <li>注入 CollectionService 用于集合/请求的持久化</li>
@@ -147,7 +147,7 @@ public class MainFrame extends JFrame {
                      SidebarPanel sidebarPanel,
                      RequestPanel requestPanel,
                      ResponsePanel responsePanel) {
-        super("Jcurl - v2");
+        super("Jcurl");
         this.collectionService = collectionService;
         this.httpEngineService = httpEngineService;
         this.loadTestService = loadTestService;
@@ -643,7 +643,7 @@ public class MainFrame extends JFrame {
 
     private void showAbout() {
         JOptionPane.showMessageDialog(this,
-                "Jcurl v2\n\nHTTP API 测试工具\n集合文件 (JSON) + 文件夹/请求树\n\n技术栈: Java 8 + Spring Boot 2.7 + OkHttp + Swing",
+                "Jcurl\n\nHTTP API 测试工具\n集合文件 (JSON) + 文件夹/请求树\n\n技术栈: Java 8 + Spring Boot 2.7 + OkHttp + Swing",
                 "关于", JOptionPane.INFORMATION_MESSAGE);
     }
 

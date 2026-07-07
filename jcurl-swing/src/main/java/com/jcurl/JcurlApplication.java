@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * Jcurl 启动类 — v2 架构。
+ * Jcurl 启动类。
  * <p>
  * 同时承担 SpringBoot 容器引导和 Swing 窗口创建两个职责。
  * <p>

@@ -115,14 +115,14 @@ public class PerformanceTestEngine {
         // 创建线程池
         vuExecutor = Executors.newFixedThreadPool(config.getMaxVus(), r -> {
             Thread t = new Thread(r);
-            t.setName("Jcurl2-VU-" + vuIdGenerator.getAndIncrement());
+            t.setName("Jcurl-VU-" + vuIdGenerator.getAndIncrement());
             t.setDaemon(true);
             return t;
         });
 
         // 创建调度线程
         scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "Jcurl2-PerfScheduler");
+            Thread t = new Thread(r, "Jcurl-PerfScheduler");
             t.setDaemon(true);
             return t;
         });

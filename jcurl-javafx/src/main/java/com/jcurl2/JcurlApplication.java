@@ -12,7 +12,7 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
- * Jcurl2 启动类 — 同时承担 SpringBoot 容器引导与 JavaFX Application 两个职责。
+ * Jcurl 启动类 — 同时承担 SpringBoot 容器引导与 JavaFX Application 两个职责。
  * <p>
  * 启动流程:
  * <ol>

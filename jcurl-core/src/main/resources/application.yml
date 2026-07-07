@@ -5,7 +5,7 @@ spring:
     banner-mode: off             # 关闭启动横幅
     lazy-initialization: true    # 延迟初始化 Bean, 加快启动
   application:
-    name: Jcurl2
+    name: Jcurl
   # 关闭不需要的自动配置
   autoconfigure:
     exclude:
@@ -21,7 +21,7 @@ spring:
       - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
       - org.springframework.boot.autoconfigure.actuate.metrics.MetricsAutoConfiguration
 
-# Jcurl2 自定义配置
+# Jcurl 自定义配置
 jcurl2:
   # 数据存储根目录(默认当前工作目录下 .api-client)
   data-dir: ./.api-client

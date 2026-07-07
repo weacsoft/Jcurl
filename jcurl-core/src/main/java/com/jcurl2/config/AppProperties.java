@@ -1,7 +1,7 @@
 package com.jcurl2.config;
 
 /**
- * Jcurl2 应用配置属性。
+ * Jcurl 应用配置属性。
  * <p>
  * 对应 application.yml 中 {@code jcurl2.*} 前缀的配置项。
  */

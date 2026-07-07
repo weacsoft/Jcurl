@@ -62,7 +62,7 @@ class ReportExporterTest {
         assertTrue(Files.exists(outputPath));
         String content = Files.readString(outputPath);
         assertTrue(content.contains("<html"));
-        assertTrue(content.contains("Jcurl2 性能测试报告"));
+        assertTrue(content.contains("Jcurl 性能测试报告"));
         assertTrue(content.contains("1000"));  // totalRequests
         assertTrue(content.contains("50.0"));  // RPS
         assertTrue(content.contains("CONSTANT")); // load model

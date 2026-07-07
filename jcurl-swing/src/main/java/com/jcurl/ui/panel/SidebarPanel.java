@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * 左侧边栏 — v2 架构。
+ * 左侧边栏。
  * <p>
  * 使用 JTabbedPane 顶部切换两个标签页:
  * <ul>
