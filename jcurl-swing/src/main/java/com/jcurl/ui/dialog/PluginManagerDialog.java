@@ -92,20 +92,20 @@ public class PluginManagerDialog extends JDialog {
 
     /**
      * 默认插件模板代码 — 保存为 {@code DefaultPlugin.java} 后编译加载。
-     * 使用共享插件接口 (com.jcurl2.plugin.*), 通过 @JcurlPlugin 注解提供元数据,
+     * 使用共享插件接口 (com.jcurl.plugin.*), 通过 @JcurlPlugin 注解提供元数据,
      * 实现 RequestInterceptor + ResponseInterceptor + VariableFunctionExtension + MetricsCollectorExtension 四个扩展点,
      * 展示全部四个扩展点的用法。
      */
     private static final String DEFAULT_PLUGIN_TEMPLATE =
-            "import com.jcurl2.model.component.Header;\n" +
-            "import com.jcurl2.model.dto.RequestConfig;\n" +
-            "import com.jcurl2.model.dto.ResponseData;\n" +
-            "import com.jcurl2.plugin.JcurlPlugin;\n" +
-            "import com.jcurl2.plugin.PluginContext;\n" +
-            "import com.jcurl2.plugin.extension.MetricsCollectorExtension;\n" +
-            "import com.jcurl2.plugin.extension.RequestInterceptor;\n" +
-            "import com.jcurl2.plugin.extension.ResponseInterceptor;\n" +
-            "import com.jcurl2.plugin.extension.VariableFunctionExtension;\n" +
+            "import com.jcurl.plugin.model.component.Header;\n" +
+            "import com.jcurl.plugin.model.dto.RequestConfig;\n" +
+            "import com.jcurl.plugin.model.dto.ResponseData;\n" +
+            "import com.jcurl.plugin.JcurlPlugin;\n" +
+            "import com.jcurl.plugin.PluginContext;\n" +
+            "import com.jcurl.plugin.extension.MetricsCollectorExtension;\n" +
+            "import com.jcurl.plugin.extension.RequestInterceptor;\n" +
+            "import com.jcurl.plugin.extension.ResponseInterceptor;\n" +
+            "import com.jcurl.plugin.extension.VariableFunctionExtension;\n" +
             "\n" +
             "import java.util.Arrays;\n" +
             "import java.util.HashMap;\n" +

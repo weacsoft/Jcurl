@@ -22,7 +22,7 @@ spring:
       - org.springframework.boot.autoconfigure.actuate.metrics.MetricsAutoConfiguration
 
 # Jcurl 自定义配置
-jcurl2:
+jcurl:
   # 数据存储根目录(默认当前工作目录下 .api-client)
   data-dir: ./.api-client
   # 历史记录上限

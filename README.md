@@ -153,11 +153,11 @@ See [DemoPlugin.java](plugins/DemoPlugin.java) for a complete example.
 jcurl/
 ├── pom.xml                  # Parent POM (aggregates 5 modules)
 ├── jcurl-plugin-api/        # Shared plugin API (JDK 8)
-│   └── src/main/java/com/jcurl2/
-│       ├── model/           # Header, RequestConfig, ResponseData, TimingMetrics
+│   └── src/main/java/com/jcurl/
+│       ├── plugin/model/    # Header, RequestConfig, ResponseData, TimingMetrics
 │       └── plugin/          # ExtensionPoint, JcurlPlugin, PluginContext, 4 extension interfaces
 ├── jcurl-core/              # Core + CLI
-│   └── src/main/java/com/jcurl2/
+│   └── src/main/java/com/jcurl/
 │       ├── cli/             # CurlArgParser, CliLauncher
 │       ├── config/          # AppConfig
 │       ├── model/           # DTOs, components
@@ -165,7 +165,7 @@ jcurl/
 │       ├── service/         # HttpEngineService, CookieService, etc.
 │       └── store/           # JSON file storage
 ├── jcurl-javafx/            # JavaFX GUI
-│   └── src/main/java/com/jcurl2/ui/
+│   └── src/main/java/com/jcurl/ui/
 ├── jcurl-swing/             # Swing GUI (pure UI layer, no functional difference)
 │   └── src/main/java/com/jcurl/
 ├── jcurl-plugin-demo/       # Demo JAR plugin

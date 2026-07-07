@@ -1,6 +1,6 @@
 package com.jcurl.plugin;
 
-import com.jcurl2.plugin.PluginContext;
+import com.jcurl.plugin.PluginContext;
 
 import java.nio.file.Path;
 

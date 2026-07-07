@@ -1,12 +1,12 @@
 package com.jcurl.plugin;
 
-import com.jcurl2.plugin.ExtensionPoint;
-import com.jcurl2.plugin.JcurlPlugin;
-import com.jcurl2.plugin.PluginContext;
-import com.jcurl2.plugin.extension.MetricsCollectorExtension;
-import com.jcurl2.plugin.extension.RequestInterceptor;
-import com.jcurl2.plugin.extension.ResponseInterceptor;
-import com.jcurl2.plugin.extension.VariableFunctionExtension;
+import com.jcurl.plugin.ExtensionPoint;
+import com.jcurl.plugin.JcurlPlugin;
+import com.jcurl.plugin.PluginContext;
+import com.jcurl.plugin.extension.MetricsCollectorExtension;
+import com.jcurl.plugin.extension.RequestInterceptor;
+import com.jcurl.plugin.extension.ResponseInterceptor;
+import com.jcurl.plugin.extension.VariableFunctionExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -397,8 +397,8 @@ public class PluginManager {
      * @param config 共享请求配置 (可修改)
      * @return 修改后的共享请求配置
      */
-    public com.jcurl2.model.dto.RequestConfig applyRequestInterceptors(com.jcurl2.model.dto.RequestConfig config) {
-        com.jcurl2.model.dto.RequestConfig result = config;
+    public com.jcurl.plugin.model.dto.RequestConfig applyRequestInterceptors(com.jcurl.plugin.model.dto.RequestConfig config) {
+        com.jcurl.plugin.model.dto.RequestConfig result = config;
         for (RequestInterceptor interceptor : activeRequestInterceptors) {
             try {
                 result = interceptor.beforeRequest(result, pluginContext);
@@ -420,9 +420,9 @@ public class PluginManager {
      * @param config   原始共享请求配置 (只读)
      * @return 修改后的共享响应数据
      */
-    public com.jcurl2.model.dto.ResponseData applyResponseProcessors(
-            com.jcurl2.model.dto.ResponseData response, com.jcurl2.model.dto.RequestConfig config) {
-        com.jcurl2.model.dto.ResponseData result = response;
+    public com.jcurl.plugin.model.dto.ResponseData applyResponseProcessors(
+            com.jcurl.plugin.model.dto.ResponseData response, com.jcurl.plugin.model.dto.RequestConfig config) {
+        com.jcurl.plugin.model.dto.ResponseData result = response;
         for (ResponseInterceptor interceptor : activeResponseInterceptors) {
             try {
                 result = interceptor.afterResponse(result, config, pluginContext);
@@ -454,7 +454,7 @@ public class PluginManager {
      * @return 指标名 → 指标值 的合并映射,无活跃采集器返回空 Map
      */
     public Map<String, Double> applyMetricsCollectors(
-            com.jcurl2.model.dto.RequestConfig config, com.jcurl2.model.dto.ResponseData response) {
+            com.jcurl.plugin.model.dto.RequestConfig config, com.jcurl.plugin.model.dto.ResponseData response) {
         Map<String, Double> metrics = new HashMap<>();
         for (MetricsCollectorExtension collector : activeMetricsCollectors) {
             try {

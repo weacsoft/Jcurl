@@ -200,7 +200,7 @@ public class HttpEngineService {
         // 插件: 请求拦截器 (Swing 模型 ↔ 共享模型 适配)
         // 将 Swing RequestConfig 转换为共享 RequestConfig, 调用插件拦截器,
         // 再将插件修改 (主要是 headers) 应用回 Swing RequestConfig。
-        com.jcurl2.model.dto.RequestConfig sharedRequest = null;
+        com.jcurl.plugin.model.dto.RequestConfig sharedRequest = null;
         if (pluginManager != null) {
             try {
                 sharedRequest = toSharedRequest(config);
@@ -338,7 +338,7 @@ public class HttpEngineService {
         // 再将插件修改 (headers / body) 应用回 Swing ResponseData。
         if (pluginManager != null && sharedRequest != null) {
             try {
-                com.jcurl2.model.dto.ResponseData sharedResponse = toSharedResponse(response);
+                com.jcurl.plugin.model.dto.ResponseData sharedResponse = toSharedResponse(response);
                 sharedResponse = pluginManager.applyResponseProcessors(sharedResponse, sharedRequest);
                 applySharedToSwing(sharedResponse, response);
             } catch (Exception e) {
@@ -748,7 +748,7 @@ public class HttpEngineService {
     }
 
     // ==================== 插件模型适配器 ====================
-    // Swing 模型类 (com.jcurl.model.dto.*) 与共享插件模型类 (com.jcurl2.model.dto.*)
+    // Swing 模型类 (com.jcurl.plugin.model.dto.*) 与共享插件模型类 (com.jcurl.plugin.model.dto.*)
     // 字段结构不同, 插件使用共享模型, 这里负责双向转换。
     // 适配器只转换插件需要用到的字段 (method/url/headers/body/statusCode/timing 等)。
 
@@ -756,21 +756,21 @@ public class HttpEngineService {
      * Swing RequestConfig → 共享 RequestConfig。
      * 转换 method、url、headers、body (type/content/rawType)。
      */
-    private com.jcurl2.model.dto.RequestConfig toSharedRequest(RequestConfig swing) {
-        com.jcurl2.model.dto.RequestConfig shared = new com.jcurl2.model.dto.RequestConfig();
+    private com.jcurl.plugin.model.dto.RequestConfig toSharedRequest(RequestConfig swing) {
+        com.jcurl.plugin.model.dto.RequestConfig shared = new com.jcurl.plugin.model.dto.RequestConfig();
         shared.setMethod(swing.getMethod());
         shared.setUrl(swing.getUrl());
         // headers: List<KeyValue> → List<Header> (仅复制启用的头)
         if (swing.getHeaders() != null) {
             for (KeyValue h : swing.getHeaders()) {
                 if (h.isEnabled()) {
-                    shared.getHeaders().add(new com.jcurl2.model.component.Header(
+                    shared.getHeaders().add(new com.jcurl.plugin.model.component.Header(
                             h.getKey(), h.getValue()));
                 }
             }
         }
         // body: Swing 使用 bodyType/bodyContent/rawContentType 字符串, 共享使用 RequestBody 对象
-        com.jcurl2.model.component.RequestBody sharedBody = shared.getBody();
+        com.jcurl.plugin.model.component.RequestBody sharedBody = shared.getBody();
         sharedBody.setType(swing.getBodyType());
         sharedBody.setContent(swing.getBodyContent());
         sharedBody.setRawType(swing.getRawContentType());
@@ -781,13 +781,13 @@ public class HttpEngineService {
      * 将插件修改的共享 RequestConfig 应用回 Swing RequestConfig。
      * 主要应用 headers 的变化 (插件最常修改的就是 headers)。
      */
-    private void applySharedToSwing(com.jcurl2.model.dto.RequestConfig shared, RequestConfig swing) {
+    private void applySharedToSwing(com.jcurl.plugin.model.dto.RequestConfig shared, RequestConfig swing) {
         swing.getHeaders().clear();
-        for (com.jcurl2.model.component.Header h : shared.getHeaders()) {
+        for (com.jcurl.plugin.model.component.Header h : shared.getHeaders()) {
             swing.getHeaders().add(new KeyValue(h.getKey(), h.getValue(), null, h.isEnabled()));
         }
         // body 内容 (插件可能修改了 raw 文本)
-        com.jcurl2.model.component.RequestBody sharedBody = shared.getBody();
+        com.jcurl.plugin.model.component.RequestBody sharedBody = shared.getBody();
         if (sharedBody.getType() != null) {
             swing.setBodyType(sharedBody.getType());
         }
@@ -803,8 +803,8 @@ public class HttpEngineService {
      * Swing ResponseData → 共享 ResponseData。
      * 转换 statusCode、statusText、headers、body、contentType、size、error、timing。
      */
-    private com.jcurl2.model.dto.ResponseData toSharedResponse(ResponseData swing) {
-        com.jcurl2.model.dto.ResponseData shared = new com.jcurl2.model.dto.ResponseData();
+    private com.jcurl.plugin.model.dto.ResponseData toSharedResponse(ResponseData swing) {
+        com.jcurl.plugin.model.dto.ResponseData shared = new com.jcurl.plugin.model.dto.ResponseData();
         shared.setStatusCode(swing.getStatusCode());
         shared.setStatusText(swing.getStatusText());
         shared.setBody(swing.getResponseBody());
@@ -814,7 +814,7 @@ public class HttpEngineService {
         if (swing.getResponseHeaders() != null) {
             for (Map.Entry<String, String> e : swing.getResponseHeaders().entrySet()) {
                 if (e.getKey() != null) {
-                    shared.getHeaders().add(new com.jcurl2.model.component.Header(
+                    shared.getHeaders().add(new com.jcurl.plugin.model.component.Header(
                             e.getKey(), e.getValue() != null ? e.getValue() : ""));
                 }
             }
@@ -823,7 +823,7 @@ public class HttpEngineService {
         String contentType = getHeaderIgnoreCase(swing.getResponseHeaders(), "Content-Type");
         shared.setContentType(contentType);
         // timing: Swing 各耗时字段 → 共享 TimingMetrics
-        com.jcurl2.model.dto.TimingMetrics timing = new com.jcurl2.model.dto.TimingMetrics();
+        com.jcurl.plugin.model.dto.TimingMetrics timing = new com.jcurl.plugin.model.dto.TimingMetrics();
         timing.setTotalMs(swing.getResponseTime());
         timing.setDnsMs(swing.getDnsTime());
         timing.setTcpMs(swing.getTcpConnectTime());
@@ -836,10 +836,10 @@ public class HttpEngineService {
      * 将插件修改的共享 ResponseData 应用回 Swing ResponseData。
      * 应用 headers 与 body 的变化。
      */
-    private void applySharedToSwing(com.jcurl2.model.dto.ResponseData shared, ResponseData swing) {
+    private void applySharedToSwing(com.jcurl.plugin.model.dto.ResponseData shared, ResponseData swing) {
         // headers: List<Header> → Map<String,String>
         swing.getResponseHeaders().clear();
-        for (com.jcurl2.model.component.Header h : shared.getHeaders()) {
+        for (com.jcurl.plugin.model.component.Header h : shared.getHeaders()) {
             if (h.getKey() != null) {
                 swing.getResponseHeaders().put(h.getKey(),
                         h.getValue() != null ? h.getValue() : "");

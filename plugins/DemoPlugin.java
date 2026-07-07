@@ -1,13 +1,13 @@
-import com.jcurl2.model.component.Header;
-import com.jcurl2.model.dto.RequestConfig;
-import com.jcurl2.model.dto.ResponseData;
-import com.jcurl2.plugin.ExtensionPoint;
-import com.jcurl2.plugin.JcurlPlugin;
-import com.jcurl2.plugin.PluginContext;
-import com.jcurl2.plugin.extension.MetricsCollectorExtension;
-import com.jcurl2.plugin.extension.RequestInterceptor;
-import com.jcurl2.plugin.extension.ResponseInterceptor;
-import com.jcurl2.plugin.extension.VariableFunctionExtension;
+import com.jcurl.plugin.model.component.Header;
+import com.jcurl.plugin.model.dto.RequestConfig;
+import com.jcurl.plugin.model.dto.ResponseData;
+import com.jcurl.plugin.ExtensionPoint;
+import com.jcurl.plugin.JcurlPlugin;
+import com.jcurl.plugin.PluginContext;
+import com.jcurl.plugin.extension.MetricsCollectorExtension;
+import com.jcurl.plugin.extension.RequestInterceptor;
+import com.jcurl.plugin.extension.ResponseInterceptor;
+import com.jcurl.plugin.extension.VariableFunctionExtension;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

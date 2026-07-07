@@ -112,7 +112,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>com.jcurl2.cli.CliLauncher</mainClass>
+                    <mainClass>com.jcurl.cli.CliLauncher</mainClass>
                     <classifier>exec</classifier>
                 </configuration>
                 <executions>

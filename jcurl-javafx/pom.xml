@@ -101,7 +101,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>com.jcurl2.Launcher</mainClass>
+                    <mainClass>com.jcurl.Launcher</mainClass>
                 </configuration>
                 <executions>
                     <execution>
