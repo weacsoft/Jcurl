@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jcurl - Plugin Development Guide</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+<style>
+:root { --bg:#0d1117; --fg:#c9d1d9; --card:#161b22; --border:#30363d; --accent:#58a6ff; --code:#1e1e1e; --green:#3fb950; --orange:#d29922; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--fg);line-height:1.6}
+.hero{text-align:center;padding:60px 20px;background:linear-gradient(135deg,#0d1117,#161b22);border-bottom:1px solid var(--border)}
+.hero h1{font-size:2.6rem;color:var(--accent);margin-bottom:10px}
+.hero p{font-size:1.2rem;color:var(--fg);opacity:0.8}
+.badges{margin-top:15px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.badge{padding:3px 12px;border-radius:20px;font-size:0.85rem;border:1px solid var(--border)}
+.badge.green{color:var(--green);border-color:var(--green)}
+.badge.blue{color:var(--accent);border-color:var(--accent)}
+.badge.orange{color:var(--orange);border-color:var(--orange)}
+.navbar{text-align:center;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--border)}
+.navbar a{color:var(--accent);text-decoration:none;margin:0 8px;font-size:0.95rem;padding:6px 16px;border-radius:6px;border:1px solid transparent;transition:all .15s}
+.navbar a:hover{border-color:var(--border);background:var(--bg)}
+.navbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.container{max-width:900px;margin:0 auto;padding:40px 20px}
+.lang-toggle{text-align:center;margin:20px 0}
+.lang-toggle button{padding:8px 20px;margin:0 5px;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:6px;cursor:pointer;font-size:0.95rem}
+.lang-toggle button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+section{margin-bottom:40px}
+h2{font-size:1.6rem;color:var(--accent);margin-bottom:15px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+h3{font-size:1.2rem;color:var(--fg);margin:20px 0 10px}
+h4{font-size:1.05rem;color:var(--accent);margin:16px 0 8px}
+p{margin-bottom:12px}
+ul,ol{margin:0 0 12px 22px}
+li{margin-bottom:6px}
+code{background:var(--code);padding:2px 6px;border-radius:4px;font-family:'Consolas',monospace;font-size:0.9rem;color:#ce9178}
+pre{background:var(--code);padding:16px;border-radius:8px;overflow-x:auto;margin:12px 0;border:1px solid var(--border)}
+pre code{background:none;padding:0;color:#d4d4d4;font-size:0.88rem;line-height:1.5}
+table{width:100%;border-collapse:collapse;margin:15px 0}
+th,td{padding:10px 12px;text-align:left;border:1px solid var(--border)}
+th{background:var(--card);color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin:15px 0}
+.card h3{color:var(--accent)}
+.tip{border-left:3px solid var(--green);padding-left:15px;margin:15px 0;color:var(--green)}
+.warn{border-left:3px solid var(--orange);padding-left:15px;margin:15px 0;color:var(--orange)}
+.lang{display:none}
+.lang.active{display:block}
+.footer{text-align:center;padding:30px;border-top:1px solid var(--border);color:var(--fg);opacity:0.5}
+.toc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:30px}
+.toc h3{margin-top:0}
+.toc ol{margin:0 0 0 22px}
+.toc a{color:var(--accent);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.sig{background:var(--code);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin:10px 0;font-family:'Consolas',monospace;font-size:0.88rem;color:#9cdcfe}
+</style>
+</head>
+<body>
+
+<div class="hero">
+<h1>Plugin Development Guide</h1>
+<p>Extend Jcurl with request/response interceptors, custom variables, and metrics</p>
+<div class="badges">
+<span class="badge green">Runtime Compilation</span>
+<span class="badge blue">4 Extension Points</span>
+<span class="badge orange">Swing / JavaFX / CLI</span>
+</div>
+</div>
+
+<nav class="navbar">
+<a href="index.html">Home</a>
+<a href="plugin-development.html" class="active">Plugin Development Guide</a>
+</nav>
+
+<div class="container">
+
+<div class="lang-toggle">
+<button id="btn-en" class="active" onclick="showLang('en')">English</button>
+<button id="btn-zh" onclick="showLang('zh')">中文</button>
+</div>
+
+<!-- ENGLISH -->
+<div id="lang-en" class="lang active">
+
+<div class="toc">
+<h3>Table of Contents</h3>
+<ol>
+<li><a href="#intro">Introduction: The Plugin System</a></li>
+<li><a href="#annotation">The @JcurlPlugin Annotation</a></li>
+<li><a href="#context">PluginContext Interface</a></li>
+<li><a href="#request">RequestInterceptor &amp; RequestConfig</a></li>
+<li><a href="#response">ResponseInterceptor &amp; ResponseData</a></li>
+<li><a href="#variable">VariableFunctionExtension</a></li>
+<li><a href="#metrics">MetricsCollectorExtension</a></li>
+<li><a href="#example">Complete Working Example (DemoPlugin.java)</a></li>
+<li><a href="#install">Installing Plugins</a></li>
+<li><a href="#cross">Cross-Version Compatibility</a></li>
+</ol>
+</div>
+
+<section id="intro">
+<h2>1. Introduction: The Plugin System</h2>
+<p>Jcurl ships with a lightweight plugin system that lets you extend the application without modifying its source. A plugin is a single <code>.java</code> source file annotated with <code>@JcurlPlugin</code> that implements one or more <strong>extension point</strong> interfaces. Plugins are compiled at runtime by an in-memory Java compiler (<code>JavaSourceCompiler</code>) — no pre-compilation, build steps, or JAR packaging are required.</p>
+
+<p>All extension points live in the package <code>com.jcurl2.plugin.extension</code> and extend the marker interface <code>com.jcurl2.plugin.ExtensionPoint</code>. When a plugin is loaded, the <code>PluginManager</code> discovers every implemented extension point and registers it in the <code>ExtensionRegistry</code>, where the host application calls them at the appropriate moment.</p>
+
+<p>There are <strong>four extension points</strong>:</p>
+<table>
+<tr><th>Extension Point</th><th>Interface</th><th>When it runs</th></tr>
+<tr><td>Request Interceptor</td><td><code>RequestInterceptor</code></td><td>Before an HTTP request is sent</td></tr>
+<tr><td>Response Interceptor</td><td><code>ResponseInterceptor</code></td><td>After an HTTP response is received</td></tr>
+<tr><td>Variable Function</td><td><code>VariableFunctionExtension</code></td><td>When a <code>{{$function}}</code> variable is resolved</td></tr>
+<tr><td>Metrics Collector</td><td><code>MetricsCollectorExtension</code></td><td>After each sample in a performance test</td></tr>
+</table>
+
+<div class="tip">
+A single plugin class may implement <strong>any combination</strong> of these interfaces — for example, one class can intercept requests, register custom variables, and collect metrics all at once.
+</div>
+
+<p>Package overview of the plugin API:</p>
+<pre><code class="language-text">com.jcurl2.plugin
+  ├── JcurlPlugin            (annotation)
+  ├── ExtensionPoint         (marker interface)
+  ├── PluginContext          (host services)
+  └── extension
+       ├── RequestInterceptor
+       ├── ResponseInterceptor
+       ├── VariableFunctionExtension
+       └── MetricsCollectorExtension
+
+com.jcurl2.model
+  ├── dto
+  │    ├── RequestConfig
+  │    ├── ResponseData
+  │    └── TimingMetrics
+  └── component
+       ├── Header
+       ├── QueryParam
+       ├── RequestBody
+       └── AuthConfig</code></pre>
+</section>
+
+<section id="annotation">
+<h2>2. The @JcurlPlugin Annotation</h2>
+<p>Every plugin's main class must be annotated with <code>@JcurlPlugin</code> (package <code>com.jcurl2.plugin</code>). The annotation provides metadata shown in the Plugin Manager UI and is retained at runtime (<code>@Retention(RUNTIME)</code>, <code>@Target(TYPE)</code>).</p>
+
+<div class="sig">@Retention(RetentionPolicy.RUNTIME)<br>@Target(ElementType.TYPE)<br>public @interface JcurlPlugin</div>
+
+<table>
+<tr><th>Attribute</th><th>Type</th><th>Default</th><th>Description</th></tr>
+<tr><td><code>name</code></td><td>String</td><td><code>""</code></td><td>Human-readable plugin name</td></tr>
+<tr><td><code>description</code></td><td>String</td><td><code>""</code></td><td>Short description shown in the Plugin Manager</td></tr>
+<tr><td><code>version</code></td><td>String</td><td><code>"1.0.0"</code></td><td>Semantic version</td></tr>
+<tr><td><code>author</code></td><td>String</td><td><code>""</code></td><td>Author name</td></tr>
+<tr><td><code>enabled</code></td><td>boolean</td><td><code>true</code></td><td>Whether the plugin is enabled on load (can be toggled at runtime)</td></tr>
+</table>
+
+<h4>Minimal example</h4>
+<pre><code class="language-java">import com.jcurl2.model.component.Header;
+import com.jcurl2.model.dto.RequestConfig;
+import com.jcurl2.plugin.JcurlPlugin;
+import com.jcurl2.plugin.PluginContext;
+import com.jcurl2.plugin.extension.RequestInterceptor;
+
+@JcurlPlugin(
+        name = "Sign Plugin",
+        description = "Automatically adds an API signature header",
+        version = "1.0.0",
+        author = "Jcurl"
+)
+public class SignPlugin implements RequestInterceptor {
+    @Override
+    public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
+        config.getHeaders().add(new Header("X-Sign", "abc123"));
+        return config;
+    }
+}</code></pre>
+</section>
+
+<section id="context">
+<h2>3. PluginContext Interface</h2>
+<p>The <code>PluginContext</code> interface (package <code>com.jcurl2.plugin</code>) is the plugin's window into the host application. It is the minimal shared contract implemented by <strong>all</strong> versions (core/JavaFX/Swing), so code written against it works everywhere. The core version additionally exposes <code>CorePluginContext</code>, which extends <code>PluginContext</code> with extra services.</p>
+
+<div class="sig">public interface PluginContext</div>
+
+<table>
+<tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+<tr><td><code>getDataDir()</code></td><td><code>Path</code></td><td>Data storage root directory (defaults to <code>./.api-client</code>)</td></tr>
+<tr><td><code>getPluginDataDir(String pluginId)</code></td><td><code>Path</code></td><td>Per-plugin private data directory (isolated from other plugins)</td></tr>
+<tr><td><code>log(String level, String message)</code></td><td><code>void</code></td><td>Write a log entry. Plugins should use this instead of SLF4J directly.</td></tr>
+<tr><td><code>log(String level, String message, Throwable t)</code></td><td><code>void</code></td><td>Log a message together with an exception</td></tr>
+</table>
+
+<p>Recognized <code>level</code> values include <code>"info"</code>, <code>"debug"</code>, <code>"warn"</code>, and <code>"error"</code>. Example usage:</p>
+<pre><code class="language-java">@Override
+public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
+    Path dataDir = ctx.getDataDir();                 // ./.api-client
+    Path myDir   = ctx.getPluginDataDir("SignPlugin"); // ./.api-client/plugins/data/SignPlugin
+    ctx.log("info", "Sending request to " + config.getUrl());
+    try {
+        // ... do work ...
+    } catch (Exception e) {
+        ctx.log("error", "Sign plugin failed", e);
+    }
+    return config;
+}</code></pre>
+
+<div class="tip">
+Use <code>getPluginDataDir()</code> to persist per-plugin state (caches, tokens, config files). Each plugin gets its own isolated directory, so you never collide with another plugin's data.
+</div>
+</section>
+
+<section id="request">
+<h2>4. RequestInterceptor &amp; RequestConfig</h2>
+<p>The <code>RequestInterceptor</code> extension point intercepts an HTTP request <strong>before</strong> it is sent. Typical use cases: adding a signature/auth header, request logging, encrypting or transforming the body, injecting a tracing ID.</p>
+
+<p>Interceptors run as a <strong>chain of responsibility</strong> in plugin-load order: the <code>RequestConfig</code> returned by one interceptor is passed to the next.</p>
+
+<div class="sig">public interface RequestInterceptor extends ExtensionPoint<br>&nbsp;&nbsp;&nbsp;&nbsp;RequestConfig beforeRequest(RequestConfig config, PluginContext ctx)</div>
+
+<h4>beforeRequest</h4>
+<table>
+<tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+<tr><td><code>config</code></td><td><code>RequestConfig</code></td><td>The final, variable-resolved, collection-merged request — mutable</td></tr>
+<tr><td><code>ctx</code></td><td><code>PluginContext</code></td><td>Host services</td></tr>
+<tr><td><em>returns</em></td><td><code>RequestConfig</code></td><td>The (usually same, mutated) config to send</td></tr>
+</table>
+
+<h4>RequestConfig model</h4>
+<p>Class <code>com.jcurl2.model.dto.RequestConfig</code> is the transient, ready-to-execute request configuration (distinct from the persisted <code>RequestNode</code>). Its mutable fields are accessed via getters/setters:</p>
+<table>
+<tr><th>Field</th><th>Type</th><th>Getter</th></tr>
+<tr><td>method</td><td>String</td><td><code>getMethod()</code> (default <code>"GET"</code>)</td></tr>
+<tr><td>url</td><td>String</td><td><code>getUrl()</code></td></tr>
+<tr><td>params</td><td><code>List&lt;QueryParam&gt;</code></td><td><code>getParams()</code></td></tr>
+<tr><td>headers</td><td><code>List&lt;Header&gt;</code></td><td><code>getHeaders()</code></td></tr>
+<tr><td>body</td><td><code>RequestBody</code></td><td><code>getBody()</code></td></tr>
+<tr><td>auth</td><td><code>AuthConfig</code></td><td><code>getAuth()</code></td></tr>
+</table>
+
+<h4>Header model</h4>
+<p>Class <code>com.jcurl2.model.component.Header</code> — a key/value pair with an <code>enabled</code> flag and optional <code>description</code>.</p>
+<pre><code class="language-java">new Header(String key, String value)                 // enabled = true
+new Header(String key, String value, boolean enabled)
+// getters: getKey(), getValue(), isEnabled(), getDescription()</code></pre>
+
+<h4>Example: add a tracing header unless the user already set one</h4>
+<pre><code class="language-java">@Override
+public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
+    String requestId = java.util.UUID.randomUUID().toString().substring(0, 8);
+
+    boolean hasId = config.getHeaders().stream()
+            .anyMatch(h -> "X-Request-Id".equalsIgnoreCase(h.getKey()));
+    if (!hasId) {
+        config.getHeaders().add(new Header("X-Request-Id", requestId));
+    }
+    config.getHeaders().add(new Header("X-Plugin-Timestamp",
+            String.valueOf(System.currentTimeMillis())));
+
+    ctx.log("info", String.format("Sending %s %s (RequestId=%s)",
+            config.getMethod(), config.getUrl(), requestId));
+    return config;
+}</code></pre>
+</section>
+
+<section id="response">
+<h2>5. ResponseInterceptor &amp; ResponseData</h2>
+<p>The <code>ResponseInterceptor</code> extension point intercepts an HTTP response <strong>after</strong> it is received. Typical use cases: response decryption, response logging, automatically extracting a token, transforming the body, marking error responses, running assertions.</p>
+
+<p>Like request interceptors, response interceptors form a chain in plugin-load order.</p>
+
+<div class="sig">public interface ResponseInterceptor extends ExtensionPoint<br>&nbsp;&nbsp;&nbsp;&nbsp;ResponseData afterResponse(ResponseData response, RequestConfig config, PluginContext ctx)</div>
+
+<h4>afterResponse</h4>
+<table>
+<tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+<tr><td><code>response</code></td><td><code>ResponseData</code></td><td>The received response — mutable</td></tr>
+<tr><td><code>config</code></td><td><code>RequestConfig</code></td><td>The original request config — <strong>read-only</strong></td></tr>
+<tr><td><code>ctx</code></td><td><code>PluginContext</code></td><td>Host services</td></tr>
+<tr><td><em>returns</em></td><td><code>ResponseData</code></td><td>The (usually same, mutated) response</td></tr>
+</table>
+
+<h4>ResponseData model</h4>
+<p>Class <code>com.jcurl2.model.dto.ResponseData</code> holds the complete response. Key accessors:</p>
+<table>
+<tr><th>Field</th><th>Type</th><th>Getter</th></tr>
+<tr><td>statusCode</td><td>int</td><td><code>getStatusCode()</code> (e.g. 200)</td></tr>
+<tr><td>statusText</td><td>String</td><td><code>getStatusText()</code> (e.g. "OK")</td></tr>
+<tr><td>protocol</td><td>String</td><td><code>getProtocol()</code> (e.g. "HTTP/1.1")</td></tr>
+<tr><td>headers</td><td><code>List&lt;Header&gt;</code></td><td><code>getHeaders()</code></td></tr>
+<tr><td>body</td><td>String</td><td><code>getBody()</code> (text body; binary uses <code>binaryBase64</code>)</td></tr>
+<tr><td>contentType</td><td>String</td><td><code>getContentType()</code></td></tr>
+<tr><td>size</td><td>long</td><td><code>getSize()</code> (bytes)</td></tr>
+<tr><td>timing</td><td><code>TimingMetrics</code></td><td><code>getTiming()</code> (e.g. <code>getTotalMs()</code>)</td></tr>
+<tr><td>cancelled</td><td>boolean</td><td><code>isCancelled()</code></td></tr>
+<tr><td>error</td><td>String</td><td><code>getError()</code> (failure message, null on success)</td></tr>
+<tr><td>binaryBase64</td><td>String</td><td><code>getBinaryBase64()</code> (Base64 for image/binary previews)</td></tr>
+<tr><td>—</td><td>boolean</td><td><code>isSuccess()</code> (true if no error, not cancelled, status &gt; 0)</td></tr>
+</table>
+
+<h4>Example: log timing and mark errors</h4>
+<pre><code class="language-java">@Override
+public ResponseData afterResponse(ResponseData response, RequestConfig config, PluginContext ctx) {
+    String timing = response.getTiming() != null
+            ? response.getTiming().getTotalMs() + "ms"
+            : "unknown";
+    ctx.log("info", String.format("Got %d %s (%s, %d bytes)",
+            response.getStatusCode(), response.getStatusText(),
+            timing, response.getSize()));
+
+    // Detect a token in a JSON body (you could extract it to an env variable)
+    if (response.getBody() != null && response.getBody().contains("\"token\"")) {
+        ctx.log("debug", "Response contains a token field");
+    }
+
+    // Tag error responses
+    if (response.getStatusCode() >= 400) {
+        response.getHeaders().add(new Header("X-Plugin-Error-Marked", "true"));
+    }
+    return response;
+}</code></pre>
+</section>
+
+<section id="variable">
+<h2>6. VariableFunctionExtension</h2>
+<p>This extension point registers custom dynamic variables of the form <code>{{$functionName}}</code> that can be used in URLs, headers, and request bodies — exactly like the built-in functions <code>{{$timestamp}}</code>, <code>{{$uuid}}</code>, <code>{{$randomInt}}</code>, and <code>{{$datetime}}</code>.</p>
+
+<div class="sig">public interface VariableFunctionExtension extends ExtensionPoint<br>&nbsp;&nbsp;&nbsp;&nbsp;List&lt;String&gt; getFunctionNames(PluginContext ctx)<br>&nbsp;&nbsp;&nbsp;&nbsp;String executeFunction(String functionName, String args, PluginContext ctx)</div>
+
+<h4>getFunctionNames</h4>
+<p>Returns the function names <strong>without</strong> the <code>{{$}}</code> wrapping. Returning <code>["md5", "base64"]</code> makes <code>{{$md5}}</code> and <code>{{$base64}}</code> available (and they appear in the variable auto-completion popup).</p>
+
+<h4>executeFunction</h4>
+<table>
+<tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+<tr><td><code>functionName</code></td><td>String</td><td>The function name (without <code>{{$}}</code>)</td></tr>
+<tr><td><code>args</code></td><td>String</td><td>Text inside the parentheses, already stripped of the parens; empty string when no argument</td></tr>
+<tr><td><code>ctx</code></td><td><code>PluginContext</code></td><td>Host services</td></tr>
+<tr><td><em>returns</em></td><td>String</td><td>The computed value, or <code>null</code> if the function is not handled</td></tr>
+</table>
+
+<p>For example, <code>{{$md5(Hello)}}</code> calls <code>executeFunction("md5", "Hello", ctx)</code>. <code>{{$uuid2}}</code> calls it with <code>""</code> as <code>args</code>.</p>
+
+<h4>Example: md5, base64, uuid2</h4>
+<pre><code class="language-java">@Override
+public List&lt;String&gt; getFunctionNames(PluginContext ctx) {
+    return List.of("md5", "base64", "uuid2");
+}
+
+@Override
+public String executeFunction(String functionName, String args, PluginContext ctx) {
+    try {
+        switch (functionName) {
+            case "md5":
+                return md5(args != null ? args : "");
+            case "base64":
+                return Base64.getEncoder().encodeToString(
+                        (args != null ? args : "").getBytes(StandardCharsets.UTF_8));
+            case "uuid2":
+                return UUID.randomUUID().toString().replace("-", "");
+            default:
+                return null;   // function not supported by this plugin
+        }
+    } catch (Exception e) {
+        ctx.log("error", "Function " + functionName + " failed: " + e.getMessage());
+        return null;
+    }
+}</code></pre>
+
+<div class="tip">
+Returning <code>null</code> from <code>executeFunction</code> signals "not handled", so multiple variable-function plugins can coexist and each only answers its own names.
+</div>
+</section>
+
+<section id="metrics">
+<h2>7. MetricsCollectorExtension</h2>
+<p>This extension point collects <strong>custom metrics</strong> during a performance/load test. Jcurl already records built-in metrics (DNS/TCP/TLS/TTFB/Total timing, status code, response size); your plugin can add business-level metrics such as memory usage, CPU load, or a derived success flag. Custom metric names appear in the performance test report alongside the built-in ones.</p>
+
+<div class="sig">public interface MetricsCollectorExtension extends ExtensionPoint<br>&nbsp;&nbsp;&nbsp;&nbsp;List&lt;String&gt; getMetricNames()<br>&nbsp;&nbsp;&nbsp;&nbsp;Map&lt;String, Double&gt; collectMetrics(RequestConfig config, ResponseData response, PluginContext ctx)</div>
+
+<h4>getMetricNames</h4>
+<p>Returns the list of metric names this collector provides (e.g. <code>["response_kb", "is_success"]</code>). These names show up as columns in the performance test report.</p>
+
+<h4>collectMetrics</h4>
+<p>Called once per request after it completes during a performance test. Returns a map of metric name to numeric value.</p>
+
+<h4>Example: response size in KB and a success flag</h4>
+<pre><code class="language-java">@Override
+public List&lt;String&gt; getMetricNames() {
+    return List.of("response_kb", "is_success");
+}
+
+@Override
+public Map&lt;String, Double&gt; collectMetrics(RequestConfig config, ResponseData response, PluginContext ctx) {
+    Map&lt;String, Double&gt; metrics = new HashMap&lt;&gt;();
+
+    double kb = response.getSize() / 1024.0;
+    metrics.put("response_kb", Math.round(kb * 100.0) / 100.0);
+
+    int code = response.getStatusCode();
+    metrics.put("is_success", (code &gt;= 200 && code &lt; 400) ? 1.0 : 0.0);
+
+    return metrics;
+}</code></pre>
+</section>
+
+<section id="example">
+<h2>8. Complete Working Example (DemoPlugin.java)</h2>
+<p>The following plugin implements <strong>all four</strong> extension points at once. Drop it into <code>./.api-client/plugins/</code> and it will be compiled and loaded on the next plugin scan.</p>
+<pre><code class="language-java">import com.jcurl2.model.component.Header;
+import com.jcurl2.model.dto.RequestConfig;
+import com.jcurl2.model.dto.ResponseData;
+import com.jcurl2.plugin.ExtensionPoint;
+import com.jcurl2.plugin.JcurlPlugin;
+import com.jcurl2.plugin.PluginContext;
+import com.jcurl2.plugin.extension.MetricsCollectorExtension;
+import com.jcurl2.plugin.extension.RequestInterceptor;
+import com.jcurl2.plugin.extension.ResponseInterceptor;
+import com.jcurl2.plugin.extension.VariableFunctionExtension;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Jcurl demo plugin - demonstrates the four extension points.
+ *
+ * Features:
+ *   - RequestInterceptor: adds X-Request-Id and X-Timestamp headers, logs requests
+ *   - ResponseInterceptor: logs status/timing, detects a token in the body, marks errors
+ *   - VariableFunctionExtension: adds {{$md5}}, {{$base64}}, {{$uuid2}}
+ *   - MetricsCollectorExtension: collects response_kb and is_success metrics
+ *
+ * Install: copy this file to ./.api-client/plugins/ or use the Plugin Manager.
+ */
+@JcurlPlugin(
+        name = "Demo Plugin",
+        description = "Demonstrates request/response interceptors, variable functions, and metrics",
+        version = "1.0.0",
+        author = "Jcurl"
+)
+public class DemoPlugin implements RequestInterceptor, ResponseInterceptor,
+        VariableFunctionExtension, MetricsCollectorExtension {
+
+    private static final String HEADER_REQUEST_ID = "X-Request-Id";
+    private static final String HEADER_TIMESTAMP = "X-Plugin-Timestamp";
+
+    // ==================== RequestInterceptor ====================
+
+    @Override
+    public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
+        String requestId = UUID.randomUUID().toString().substring(0, 8);
+
+        boolean hasRequestId = config.getHeaders().stream()
+                .anyMatch(h -> HEADER_REQUEST_ID.equalsIgnoreCase(h.getKey()));
+        if (!hasRequestId) {
+            config.getHeaders().add(new Header(HEADER_REQUEST_ID, requestId));
+        }
+
+        config.getHeaders().add(new Header(HEADER_TIMESTAMP,
+                String.valueOf(System.currentTimeMillis())));
+
+        ctx.log("info", String.format("[Demo] Sending %s %s (RequestId=%s)",
+                config.getMethod(), config.getUrl(), requestId));
+        return config;
+    }
+
+    // ==================== ResponseInterceptor ====================
+
+    @Override
+    public ResponseData afterResponse(ResponseData response, RequestConfig config, PluginContext ctx) {
+        String timingInfo = response.getTiming() != null
+                ? response.getTiming().getTotalMs() + "ms"
+                : "unknown";
+        ctx.log("info", String.format("[Demo] Got %d %s (%s, %d bytes)",
+                response.getStatusCode(), response.getStatusText(),
+                timingInfo, response.getSize()));
+
+        if (response.getBody() != null && response.getBody().contains("\"token\"")) {
+            ctx.log("debug", "[Demo] Response body contains a token field");
+        }
+
+        if (response.getStatusCode() &gt;= 400) {
+            response.getHeaders().add(new Header("X-Plugin-Error-Marked", "true"));
+        }
+        return response;
+    }
+
+    // ==================== VariableFunctionExtension ====================
+
+    @Override
+    public List&lt;String&gt; getFunctionNames(PluginContext ctx) {
+        return List.of("md5", "base64", "uuid2");
+    }
+
+    @Override
+    public String executeFunction(String functionName, String args, PluginContext ctx) {
+        try {
+            switch (functionName) {
+                case "md5":
+                    return md5(args != null ? args : "");
+                case "base64":
+                    return Base64.getEncoder().encodeToString(
+                            (args != null ? args : "").getBytes(StandardCharsets.UTF_8));
+                case "uuid2":
+                    return UUID.randomUUID().toString().replace("-", "");
+                default:
+                    return null;
+            }
+        } catch (Exception e) {
+            ctx.log("error", "[Demo] Function " + functionName + " failed: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private String md5(String input) throws Exception {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
+        StringBuilder sb = new StringBuilder();
+        for (byte b : digest) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    // ==================== MetricsCollectorExtension ====================
+
+    @Override
+    public List&lt;String&gt; getMetricNames() {
+        return List.of("response_kb", "is_success");
+    }
+
+    @Override
+    public Map&lt;String, Double&gt; collectMetrics(RequestConfig config, ResponseData response, PluginContext ctx) {
+        Map&lt;String, Double&gt; metrics = new HashMap&lt;&gt;();
+
+        double kb = response.getSize() / 1024.0;
+        metrics.put("response_kb", Math.round(kb * 100.0) / 100.0);
+
+        int code = response.getStatusCode();
+        metrics.put("is_success", (code &gt;= 200 && code &lt; 400) ? 1.0 : 0.0);
+
+        return metrics;
+    }
+}</code></pre>
+</section>
+
+<section id="install">
+<h2>9. Installing Plugins</h2>
+<p>Plugins are plain <code>.java</code> source files. Jcurl compiles them in memory at load time using the JDK compiler, so there is no build step. The data directory defaults to <code>./.api-client</code> and plugins live in <code>./.api-client/plugins/</code>.</p>
+
+<h4>Option A — Copy the file manually</h4>
+<pre><code class="language-bash"># Copy your plugin source into the plugins directory
+cp DemoPlugin.java ./.api-client/plugins/
+
+# Reload plugins from the UI (Plugin Manager -> Reload),
+# or simply restart Jcurl. The plugin is compiled on first load.</code></pre>
+
+<h4>Option B — Use the Plugin Manager</h4>
+<ol>
+<li>Open the <strong>Plugin Manager</strong> dialog from the GUI.</li>
+<li>Click <strong>Install</strong> and paste your plugin source (or point it at a <code>.java</code> file).</li>
+<li>The manager compiles, loads, and enables the plugin immediately. You can also enable/disable, uninstall, and reload plugins from here.</li>
+</ol>
+
+<div class="card">
+<h3>Directory layout</h3>
+<pre><code class="language-text">.api-client/
+├── settings.json
+├── plugins/
+│   ├── DemoPlugin.java          <- your plugin source files
+│   └── data/
+│       └── Demo Plugin/         <- per-plugin private data (via getPluginDataDir)
+└── ...</code></pre>
+</div>
+
+<div class="warn">
+A JDK (not just a JRE) is required because plugins are compiled at runtime. When launching the JavaFX GUI you must add <code>--add-modules jdk.compiler</code> so the compiler module is available.
+</div>
+
+<div class="tip">
+Compilation errors are reported in the Plugin Manager and the application log. Fix the source and click <strong>Reload</strong> — no restart is needed for source-only plugins.
+</div>
+</section>
+
+<section id="cross">
+<h2>10. Cross-Version Compatibility</h2>
+<p>The plugin API is designed to be <strong>identical across all three editions</strong> of Jcurl:</p>
+<table>
+<tr><th>Edition</th><th>Module</th><th>Context implementation</th></tr>
+<tr><td>CLI (core)</td><td><code>jcurl-core</code></td><td><code>CorePluginContext</code> (extends <code>PluginContext</code>)</td></tr>
+<tr><td>JavaFX GUI</td><td><code>jcurl-javafx</code></td><td>Implements <code>PluginContext</code></td></tr>
+<tr><td>Swing GUI (Win7)</td><td><code>jcurl-swing</code></td><td><code>SwingPluginContext</code> (implements <code>PluginContext</code>)</td></tr>
+</table>
+
+<p>What this means in practice:</p>
+<ul>
+<li>The same <code>.java</code> plugin file works unchanged in the CLI, the JavaFX GUI, and the Swing GUI.</li>
+<li>The four extension points, the <code>@JcurlPlugin</code> annotation, the <code>PluginContext</code> methods, and the model classes (<code>RequestConfig</code>, <code>ResponseData</code>, <code>Header</code>) are <strong>the same contract</strong> everywhere.</li>
+<li>If you only depend on the base <code>PluginContext</code> interface, your plugin is portable to every edition. Avoid casting to <code>CorePluginContext</code> unless you only target the core/CLI edition and need its extra services.</li>
+<li>Plugins that only touch request/response data and log through <code>ctx.log()</code> are fully portable.</li>
+</ul>
+
+<div class="tip">
+Write plugins against the <code>PluginContext</code> interface, not a specific implementation. That single rule keeps your plugin working across Swing, JavaFX, and CLI.
+</div>
+
+<p>Ready to write your first plugin? Copy the <a href="#example">DemoPlugin</a> above into <code>./.api-client/plugins/</code>, reload, and watch your interceptors, variables, and metrics come to life.</p>
+</section>
+
+</div>
+
+<!-- CHINESE -->
+<div id="lang-zh" class="lang">
+
+<div class="toc">
+<h3>目录</h3>
+<ol>
+<li><a href="#intro-zh">插件系统简介</a></li>
+<li><a href="#annotation-zh">@JcurlPlugin 注解</a></li>
+<li><a href="#context-zh">PluginContext 接口</a></li>
+<li><a href="#request-zh">RequestInterceptor 与 RequestConfig</a></li>
+<li><a href="#response-zh">ResponseInterceptor 与 ResponseData</a></li>
+<li><a href="#variable-zh">VariableFunctionExtension</a></li>
+<li><a href="#metrics-zh">MetricsCollectorExtension</a></li>
+<li><a href="#example-zh">完整示例 (DemoPlugin.java)</a></li>
+<li><a href="#install-zh">安装插件</a></li>
+<li><a href="#cross-zh">跨版本兼容性</a></li>
+</ol>
+</div>
+
+<section id="intro-zh">
+<h2>1. 插件系统简介</h2>
+<p>Jcurl 内置一套轻量级插件系统，无需修改源码即可扩展应用功能。一个插件就是一个用 <code>@JcurlPlugin</code> 标注、并实现一个或多个<strong>扩展点</strong>接口的 <code>.java</code> 源文件。插件由内置内存编译器 (<code>JavaSourceCompiler</code>) 在运行时编译——无需预编译、构建步骤或打包 JAR。</p>
+
+<p>所有扩展点都位于包 <code>com.jcurl2.plugin.extension</code>，并继承标记接口 <code>com.jcurl2.plugin.ExtensionPoint</code>。插件加载时，<code>PluginManager</code> 会发现它实现的所有扩展点并注册到 <code>ExtensionRegistry</code>，宿主程序在合适时机调用它们。</p>
+
+<p>共有 <strong>四大扩展点</strong>：</p>
+<table>
+<tr><th>扩展点</th><th>接口</th><th>触发时机</th></tr>
+<tr><td>请求拦截器</td><td><code>RequestInterceptor</code></td><td>HTTP 请求发送前</td></tr>
+<tr><td>响应拦截器</td><td><code>ResponseInterceptor</code></td><td>HTTP 响应接收后</td></tr>
+<tr><td>变量函数</td><td><code>VariableFunctionExtension</code></td><td>解析 <code>{{$function}}</code> 变量时</td></tr>
+<tr><td>指标采集</td><td><code>MetricsCollectorExtension</code></td><td>性能测试每次采样完成后</td></tr>
+</table>
+
+<div class="tip">
+单个插件类可以实现这些接口的<strong>任意组合</strong>——例如一个类同时拦截请求、注册自定义变量并采集指标。
+</div>
+
+<p>插件 API 的包结构概览：</p>
+<pre><code class="language-text">com.jcurl2.plugin
+  ├── JcurlPlugin            (注解)
+  ├── ExtensionPoint         (标记接口)
+  ├── PluginContext          (宿主服务)
+  └── extension
+       ├── RequestInterceptor
+       ├── ResponseInterceptor
+       ├── VariableFunctionExtension
+       └── MetricsCollectorExtension
+
+com.jcurl2.model
+  ├── dto
+  │    ├── RequestConfig
+  │    ├── ResponseData
+  │    └── TimingMetrics
+  └── component
+       ├── Header
+       ├── QueryParam
+       ├── RequestBody
+       └── AuthConfig</code></pre>
+</section>
+
+<section id="annotation-zh">
+<h2>2. @JcurlPlugin 注解</h2>
+<p>每个插件主类必须用 <code>@JcurlPlugin</code>（包 <code>com.jcurl2.plugin</code>）标注。该注解提供在插件管理界面显示的元数据，并在运行时保留（<code>@Retention(RUNTIME)</code>、<code>@Target(TYPE)</code>）。</p>
+
+<div class="sig">@Retention(RetentionPolicy.RUNTIME)<br>@Target(ElementType.TYPE)<br>public @interface JcurlPlugin</div>
+
+<table>
+<tr><th>属性</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+<tr><td><code>name</code></td><td>String</td><td><code>""</code></td><td>插件名称</td></tr>
+<tr><td><code>description</code></td><td>String</td><td><code>""</code></td><td>在插件管理器中显示的简短描述</td></tr>
+<tr><td><code>version</code></td><td>String</td><td><code>"1.0.0"</code></td><td>语义化版本号</td></tr>
+<tr><td><code>author</code></td><td>String</td><td><code>""</code></td><td>作者</td></tr>
+<tr><td><code>enabled</code></td><td>boolean</td><td><code>true</code></td><td>加载时是否启用（可在运行时切换）</td></tr>
+</table>
+
+<h4>最小示例</h4>
+<pre><code class="language-java">import com.jcurl2.model.component.Header;
+import com.jcurl2.model.dto.RequestConfig;
+import com.jcurl2.plugin.JcurlPlugin;
+import com.jcurl2.plugin.PluginContext;
+import com.jcurl2.plugin.extension.RequestInterceptor;
+
+@JcurlPlugin(
+        name = "签名插件",
+        description = "自动添加 API 签名头",
+        version = "1.0.0",
+        author = "Jcurl"
+)
+public class SignPlugin implements RequestInterceptor {
+    @Override
+    public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
+        config.getHeaders().add(new Header("X-Sign", "abc123"));
+        return config;
+    }
+}</code></pre>
+</section>
+
+<section id="context-zh">
+<h2>3. PluginContext 接口</h2>
+<p><code>PluginContext</code> 接口（包 <code>com.jcurl2.plugin</code>）是插件访问宿主程序的窗口。它是<strong>所有版本</strong>（core/JavaFX/Swing）共同实现的最小共享契约，因此基于它编写的代码到处可用。core 版本额外提供了 <code>CorePluginContext</code>，它扩展 <code>PluginContext</code> 暴露更多服务。</p>
+
+<div class="sig">public interface PluginContext</div>
+
+<table>
+<tr><th>方法</th><th>返回类型</th><th>说明</th></tr>
+<tr><td><code>getDataDir()</code></td><td><code>Path</code></td><td>数据存储根目录（默认 <code>./.api-client</code>）</td></tr>
+<tr><td><code>getPluginDataDir(String pluginId)</code></td><td><code>Path</code></td><td>插件专属数据目录（与其他插件隔离）</td></tr>
+<tr><td><code>log(String level, String message)</code></td><td><code>void</code></td><td>记录日志。插件应使用此方法，而非直接用 SLF4J。</td></tr>
+<tr><td><code>log(String level, String message, Throwable t)</code></td><td><code>void</code></td><td>记录日志并附带异常</td></tr>
+</table>
+
+<p>支持的 <code>level</code> 取值包括 <code>"info"</code>、<code>"debug"</code>、<code>"warn"</code>、<code>"error"</code>。用法示例：</p>
+<pre><code class="language-java">@Override
+public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
+    Path dataDir = ctx.getDataDir();                  // ./.api-client
+    Path myDir   = ctx.getPluginDataDir("SignPlugin"); // ./.api-client/plugins/data/SignPlugin
+    ctx.log("info", "发送请求到 " + config.getUrl());
+    try {
+        // ... 执行工作 ...
+    } catch (Exception e) {
+        ctx.log("error", "签名插件失败", e);
+    }
+    return config;
+}</code></pre>
+
+<div class="tip">
+使用 <code>getPluginDataDir()</code> 持久化插件私有状态（缓存、令牌、配置文件）。每个插件都有独立隔离的目录，不会与其他插件数据冲突。
+</div>
+</section>
+
+<section id="request-zh">
+<h2>4. RequestInterceptor 与 RequestConfig</h2>
+<p><code>RequestInterceptor</code> 扩展点在 HTTP 请求<strong>发送前</strong>拦截。典型场景：添加签名/认证头、请求日志、加密或转换请求体、注入链路追踪 ID。</p>
+
+<p>拦截器按插件加载顺序以<strong>责任链</strong>方式执行：前一个拦截器返回的 <code>RequestConfig</code> 会传给下一个。</p>
+
+<div class="sig">public interface RequestInterceptor extends ExtensionPoint<br>&nbsp;&nbsp;&nbsp;&nbsp;RequestConfig beforeRequest(RequestConfig config, PluginContext ctx)</div>
+
+<h4>beforeRequest</h4>
+<table>
+<tr><th>参数</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>config</code></td><td><code>RequestConfig</code></td><td>变量已解析、集合配置已合并的最终请求——可修改</td></tr>
+<tr><td><code>ctx</code></td><td><code>PluginContext</code></td><td>宿主服务</td></tr>
+<tr><td>返回</td><td><code>RequestConfig</code></td><td>要发送的（通常是同一个被修改过的）配置</td></tr>
+</table>
+
+<h4>RequestConfig 模型</h4>
+<p>类 <code>com.jcurl2.model.dto.RequestConfig</code> 是执行时的瞬时请求配置（区别于持久化的 <code>RequestNode</code>）。其可变字段通过 getter/setter 访问：</p>
+<table>
+<tr><th>字段</th><th>类型</th><th>Getter</th></tr>
+<tr><td>method</td><td>String</td><td><code>getMethod()</code>（默认 <code>"GET"</code>）</td></tr>
+<tr><td>url</td><td>String</td><td><code>getUrl()</code></td></tr>
+<tr><td>params</td><td><code>List&lt;QueryParam&gt;</code></td><td><code>getParams()</code></td></tr>
+<tr><td>headers</td><td><code>List&lt;Header&gt;</code></td><td><code>getHeaders()</code></td></tr>
+<tr><td>body</td><td><code>RequestBody</code></td><td><code>getBody()</code></td></tr>
+<tr><td>auth</td><td><code>AuthConfig</code></td><td><code>getAuth()</code></td></tr>
+</table>
+
+<h4>Header 模型</h4>
+<p>类 <code>com.jcurl2.model.component.Header</code>——带 <code>enabled</code> 标志和可选 <code>description</code> 的键值对。</p>
+<pre><code class="language-java">new Header(String key, String value)                 // enabled = true
+new Header(String key, String value, boolean enabled)
+// getter: getKey(), getValue(), isEnabled(), getDescription()</code></pre>
+
+<h4>示例：若用户未设置则添加追踪头</h4>
+<pre><code class="language-java">@Override
+public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
+    String requestId = java.util.UUID.randomUUID().toString().substring(0, 8);
+
+    boolean hasId = config.getHeaders().stream()
+            .anyMatch(h -> "X-Request-Id".equalsIgnoreCase(h.getKey()));
+    if (!hasId) {
+        config.getHeaders().add(new Header("X-Request-Id", requestId));
+    }
+    config.getHeaders().add(new Header("X-Plugin-Timestamp",
+            String.valueOf(System.currentTimeMillis())));
+
+    ctx.log("info", String.format("发送 %s %s (RequestId=%s)",
+            config.getMethod(), config.getUrl(), requestId));
+    return config;
+}</code></pre>
+</section>
+
+<section id="response-zh">
+<h2>5. ResponseInterceptor 与 ResponseData</h2>
+<p><code>ResponseInterceptor</code> 扩展点在 HTTP 响应<strong>接收后</strong>拦截。典型场景：响应解密、响应日志、自动提取 token、转换响应体、标记错误响应、断言校验。</p>
+
+<p>与请求拦截器一样，响应拦截器按插件加载顺序组成责任链。</p>
+
+<div class="sig">public interface ResponseInterceptor extends ExtensionPoint<br>&nbsp;&nbsp;&nbsp;&nbsp;ResponseData afterResponse(ResponseData response, RequestConfig config, PluginContext ctx)</div>
+
+<h4>afterResponse</h4>
+<table>
+<tr><th>参数</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>response</code></td><td><code>ResponseData</code></td><td>接收到的响应——可修改</td></tr>
+<tr><td><code>config</code></td><td><code>RequestConfig</code></td><td>原始请求配置——<strong>只读</strong></td></tr>
+<tr><td><code>ctx</code></td><td><code>PluginContext</code></td><td>宿主服务</td></tr>
+<tr><td>返回</td><td><code>ResponseData</code></td><td>（通常是同一个被修改过的）响应</td></tr>
+</table>
+
+<h4>ResponseData 模型</h4>
+<p>类 <code>com.jcurl2.model.dto.ResponseData</code> 持有完整响应。主要访问器：</p>
+<table>
+<tr><th>字段</th><th>类型</th><th>Getter</th></tr>
+<tr><td>statusCode</td><td>int</td><td><code>getStatusCode()</code>（如 200）</td></tr>
+<tr><td>statusText</td><td>String</td><td><code>getStatusText()</code>（如 "OK"）</td></tr>
+<tr><td>protocol</td><td>String</td><td><code>getProtocol()</code>（如 "HTTP/1.1"）</td></tr>
+<tr><td>headers</td><td><code>List&lt;Header&gt;</code></td><td><code>getHeaders()</code></td></tr>
+<tr><td>body</td><td>String</td><td><code>getBody()</code>（文本响应体；二进制用 <code>binaryBase64</code>）</td></tr>
+<tr><td>contentType</td><td>String</td><td><code>getContentType()</code></td></tr>
+<tr><td>size</td><td>long</td><td><code>getSize()</code>（字节）</td></tr>
+<tr><td>timing</td><td><code>TimingMetrics</code></td><td><code>getTiming()</code>（如 <code>getTotalMs()</code>）</td></tr>
+<tr><td>cancelled</td><td>boolean</td><td><code>isCancelled()</code></td></tr>
+<tr><td>error</td><td>String</td><td><code>getError()</code>（失败信息，成功时为 null）</td></tr>
+<tr><td>binaryBase64</td><td>String</td><td><code>getBinaryBase64()</code>（图片/二进制预览的 Base64）</td></tr>
+<tr><td>—</td><td>boolean</td><td><code>isSuccess()</code>（无错误、未取消、状态码 &gt; 0 时为 true）</td></tr>
+</table>
+
+<h4>示例：记录耗时并标记错误</h4>
+<pre><code class="language-java">@Override
+public ResponseData afterResponse(ResponseData response, RequestConfig config, PluginContext ctx) {
+    String timing = response.getTiming() != null
+            ? response.getTiming().getTotalMs() + "ms"
+            : "未知";
+    ctx.log("info", String.format("收到 %d %s (%s, %d 字节)",
+            response.getStatusCode(), response.getStatusText(),
+            timing, response.getSize()));
+
+    // 检测 JSON 响应体中的 token（可提取到环境变量）
+    if (response.getBody() != null && response.getBody().contains("\"token\"")) {
+        ctx.log("debug", "响应中包含 token 字段");
+    }
+
+    // 标记错误响应
+    if (response.getStatusCode() &gt;= 400) {
+        response.getHeaders().add(new Header("X-Plugin-Error-Marked", "true"));
+    }
+    return response;
+}</code></pre>
+</section>
+
+<section id="variable-zh">
+<h2>6. VariableFunctionExtension</h2>
+<p>此扩展点注册 <code>{{$functionName}}</code> 形式的自定义动态变量，可在 URL、请求头、请求体中使用——与内置函数 <code>{{$timestamp}}</code>、<code>{{$uuid}}</code>、<code>{{$randomInt}}</code>、<code>{{$datetime}}</code> 完全一致。</p>
+
+<div class="sig">public interface VariableFunctionExtension extends ExtensionPoint<br>&nbsp;&nbsp;&nbsp;&nbsp;List&lt;String&gt; getFunctionNames(PluginContext ctx)<br>&nbsp;&nbsp;&nbsp;&nbsp;String executeFunction(String functionName, String args, PluginContext ctx)</div>
+
+<h4>getFunctionNames</h4>
+<p>返回<strong>不带</strong> <code>{{$}}</code> 包裹的函数名列表。返回 <code>["md5", "base64"]</code> 即可使用 <code>{{$md5}}</code> 和 <code>{{$base64}}</code>（并出现在变量自动补全弹窗中）。</p>
+
+<h4>executeFunction</h4>
+<table>
+<tr><th>参数</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>functionName</code></td><td>String</td><td>函数名（不带 <code>{{$}}</code>）</td></tr>
+<tr><td><code>args</code></td><td>String</td><td>括号内的内容，已去除括号；无参数时为空字符串</td></tr>
+<tr><td><code>ctx</code></td><td><code>PluginContext</code></td><td>宿主服务</td></tr>
+<tr><td>返回</td><td>String</td><td>计算结果；不处理该函数时返回 <code>null</code></td></tr>
+</table>
+
+<p>例如 <code>{{$md5(Hello)}}</code> 会调用 <code>executeFunction("md5", "Hello", ctx)</code>；<code>{{$uuid2}}</code> 则以空字符串 <code>""</code> 作为 <code>args</code> 调用。</p>
+
+<h4>示例：md5、base64、uuid2</h4>
+<pre><code class="language-java">@Override
+public List&lt;String&gt; getFunctionNames(PluginContext ctx) {
+    return List.of("md5", "base64", "uuid2");
+}
+
+@Override
+public String executeFunction(String functionName, String args, PluginContext ctx) {
+    try {
+        switch (functionName) {
+            case "md5":
+                return md5(args != null ? args : "");
+            case "base64":
+                return Base64.getEncoder().encodeToString(
+                        (args != null ? args : "").getBytes(StandardCharsets.UTF_8));
+            case "uuid2":
+                return UUID.randomUUID().toString().replace("-", "");
+            default:
+                return null;   // 本插件不处理该函数
+        }
+    } catch (Exception e) {
+        ctx.log("error", "函数 " + functionName + " 执行失败: " + e.getMessage());
+        return null;
+    }
+}</code></pre>
+
+<div class="tip">
+<code>executeFunction</code> 返回 <code>null</code> 表示"不处理"，因此多个变量函数插件可共存，各自只响应自己的函数名。
+</div>
+</section>
+
+<section id="metrics-zh">
+<h2>7. MetricsCollectorExtension</h2>
+<p>此扩展点在性能/压力测试中采集<strong>自定义指标</strong>。Jcurl 已内置指标（DNS/TCP/TLS/TTFB/Total 耗时、状态码、响应大小）；插件可添加业务级指标，如内存占用、CPU 负载、派生的成功标志。自定义指标名会与内置指标一起出现在性能测试报告中。</p>
+
+<div class="sig">public interface MetricsCollectorExtension extends ExtensionPoint<br>&nbsp;&nbsp;&nbsp;&nbsp;List&lt;String&gt; getMetricNames()<br>&nbsp;&nbsp;&nbsp;&nbsp;Map&lt;String, Double&gt; collectMetrics(RequestConfig config, ResponseData response, PluginContext ctx)</div>
+
+<h4>getMetricNames</h4>
+<p>返回本采集器提供的指标名列表（如 <code>["response_kb", "is_success"]</code>）。这些名称将作为性能测试报告中的列。</p>
+
+<h4>collectMetrics</h4>
+<p>性能测试中每次请求完成后调用一次，返回 指标名 → 数值 的映射。</p>
+
+<h4>示例：响应大小(KB) 与成功标志</h4>
+<pre><code class="language-java">@Override
+public List&lt;String&gt; getMetricNames() {
+    return List.of("response_kb", "is_success");
+}
+
+@Override
+public Map&lt;String, Double&gt; collectMetrics(RequestConfig config, ResponseData response, PluginContext ctx) {
+    Map&lt;String, Double&gt; metrics = new HashMap&lt;&gt;();
+
+    double kb = response.getSize() / 1024.0;
+    metrics.put("response_kb", Math.round(kb * 100.0) / 100.0);
+
+    int code = response.getStatusCode();
+    metrics.put("is_success", (code &gt;= 200 && code &lt; 400) ? 1.0 : 0.0);
+
+    return metrics;
+}</code></pre>
+</section>
+
+<section id="example-zh">
+<h2>8. 完整示例 (DemoPlugin.java)</h2>
+<p>下面的插件同时实现<strong>全部四个</strong>扩展点。把它放入 <code>./.api-client/plugins/</code>，下次扫描插件时即会编译加载。</p>
+<pre><code class="language-java">import com.jcurl2.model.component.Header;
+import com.jcurl2.model.dto.RequestConfig;
+import com.jcurl2.model.dto.ResponseData;
+import com.jcurl2.plugin.ExtensionPoint;
+import com.jcurl2.plugin.JcurlPlugin;
+import com.jcurl2.plugin.PluginContext;
+import com.jcurl2.plugin.extension.MetricsCollectorExtension;
+import com.jcurl2.plugin.extension.RequestInterceptor;
+import com.jcurl2.plugin.extension.ResponseInterceptor;
+import com.jcurl2.plugin.extension.VariableFunctionExtension;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Jcurl 演示插件 — 展示四大扩展点的用法。
+ *
+ * 功能:
+ *   - 请求拦截器: 添加 X-Request-Id 和 X-Timestamp 头, 记录请求日志
+ *   - 响应拦截器: 记录状态和耗时, 检测响应中的 token, 标记错误
+ *   - 变量函数: 新增 {{$md5}}、{{$base64}}、{{$uuid2}}
+ *   - 指标采集: 采集 response_kb 和 is_success
+ *
+ * 安装: 将此文件复制到 ./.api-client/plugins/ 或通过插件管理器安装。
+ */
+@JcurlPlugin(
+        name = "演示插件",
+        description = "展示请求拦截/响应拦截/变量函数/指标采集四大扩展点",
+        version = "1.0.0",
+        author = "Jcurl"
+)
+public class DemoPlugin implements RequestInterceptor, ResponseInterceptor,
+        VariableFunctionExtension, MetricsCollectorExtension {
+
+    private static final String HEADER_REQUEST_ID = "X-Request-Id";
+    private static final String HEADER_TIMESTAMP = "X-Plugin-Timestamp";
+
+    // ==================== 请求拦截器 ====================
+
+    @Override
+    public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
+        String requestId = UUID.randomUUID().toString().substring(0, 8);
+
+        boolean hasRequestId = config.getHeaders().stream()
+                .anyMatch(h -> HEADER_REQUEST_ID.equalsIgnoreCase(h.getKey()));
+        if (!hasRequestId) {
+            config.getHeaders().add(new Header(HEADER_REQUEST_ID, requestId));
+        }
+
+        config.getHeaders().add(new Header(HEADER_TIMESTAMP,
+                String.valueOf(System.currentTimeMillis())));
+
+        ctx.log("info", String.format("[演示插件] 发送请求: %s %s (RequestId=%s)",
+                config.getMethod(), config.getUrl(), requestId));
+        return config;
+    }
+
+    // ==================== 响应拦截器 ====================
+
+    @Override
+    public ResponseData afterResponse(ResponseData response, RequestConfig config, PluginContext ctx) {
+        String timingInfo = response.getTiming() != null
+                ? response.getTiming().getTotalMs() + "ms"
+                : "未知";
+        ctx.log("info", String.format("[演示插件] 收到响应: %d %s (耗时: %s, 大小: %d 字节)",
+                response.getStatusCode(),
+                response.getStatusText(),
+                timingInfo,
+                response.getSize()));
+
+        if (response.getBody() != null && response.getBody().contains("\"token\"")) {
+            ctx.log("debug", "[演示插件] 检测到响应中包含 token 字段");
+        }
+
+        if (response.getStatusCode() &gt;= 400) {
+            response.getHeaders().add(new Header("X-Plugin-Error-Marked", "true"));
+        }
+        return response;
+    }
+
+    // ==================== 变量函数扩展 ====================
+
+    @Override
+    public List&lt;String&gt; getFunctionNames(PluginContext ctx) {
+        return List.of("md5", "base64", "uuid2");
+    }
+
+    @Override
+    public String executeFunction(String functionName, String args, PluginContext ctx) {
+        try {
+            switch (functionName) {
+                case "md5":
+                    return md5(args != null ? args : "");
+                case "base64":
+                    return Base64.getEncoder().encodeToString(
+                            (args != null ? args : "").getBytes(StandardCharsets.UTF_8));
+                case "uuid2":
+                    return UUID.randomUUID().toString().replace("-", "");
+                default:
+                    return null;
+            }
+        } catch (Exception e) {
+            ctx.log("error", "[演示插件] 变量函数执行失败: " + functionName + ", 错误: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private String md5(String input) throws Exception {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
+        StringBuilder sb = new StringBuilder();
+        for (byte b : digest) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    // ==================== 指标采集扩展 ====================
+
+    @Override
+    public List&lt;String&gt; getMetricNames() {
+        return List.of("response_kb", "is_success");
+    }
+
+    @Override
+    public Map&lt;String, Double&gt; collectMetrics(RequestConfig config, ResponseData response, PluginContext ctx) {
+        Map&lt;String, Double&gt; metrics = new HashMap&lt;&gt;();
+
+        double kb = response.getSize() / 1024.0;
+        metrics.put("response_kb", Math.round(kb * 100.0) / 100.0);
+
+        int code = response.getStatusCode();
+        metrics.put("is_success", (code &gt;= 200 && code &lt; 400) ? 1.0 : 0.0);
+
+        return metrics;
+    }
+}</code></pre>
+</section>
+
+<section id="install-zh">
+<h2>9. 安装插件</h2>
+<p>插件就是普通的 <code>.java</code> 源文件。Jcurl 加载时使用 JDK 编译器在内存中编译，因此无需构建步骤。数据目录默认 <code>./.api-client</code>，插件放在 <code>./.api-client/plugins/</code>。</p>
+
+<h4>方式 A — 手动复制文件</h4>
+<pre><code class="language-bash"># 将插件源码复制到 plugins 目录
+cp DemoPlugin.java ./.api-client/plugins/
+
+# 从界面重载插件（插件管理器 -> 重载），
+# 或直接重启 Jcurl。插件在首次加载时编译。</code></pre>
+
+<h4>方式 B — 使用插件管理器</h4>
+<ol>
+<li>从图形界面打开<strong>插件管理器</strong>对话框。</li>
+<li>点击<strong>安装</strong>，粘贴插件源码（或指向一个 <code>.java</code> 文件）。</li>
+<li>管理器会立即编译、加载并启用插件。你也可以在此启用/禁用、卸载、重载插件。</li>
+</ol>
+
+<div class="card">
+<h3>目录结构</h3>
+<pre><code class="language-text">.api-client/
+├── settings.json
+├── plugins/
+│   ├── DemoPlugin.java          <- 你的插件源文件
+│   └── data/
+│       └── 演示插件/            <- 插件私有数据 (通过 getPluginDataDir)
+└── ...</code></pre>
+</div>
+
+<div class="warn">
+运行时编译插件需要 JDK（而非仅 JRE）。启动 JavaFX 图形界面时必须加上 <code>--add-modules jdk.compiler</code>，以提供编译器模块。
+</div>
+
+<div class="tip">
+编译错误会在插件管理器和应用日志中报告。修正源码后点击<strong>重载</strong>即可——纯源码插件无需重启。
+</div>
+</section>
+
+<section id="cross-zh">
+<h2>10. 跨版本兼容性</h2>
+<p>插件 API 在 Jcurl 的<strong>全部三个版本</strong>中保持一致：</p>
+<table>
+<tr><th>版本</th><th>模块</th><th>上下文实现</th></tr>
+<tr><td>CLI (core)</td><td><code>jcurl-core</code></td><td><code>CorePluginContext</code>（继承 <code>PluginContext</code>）</td></tr>
+<tr><td>JavaFX 图形界面</td><td><code>jcurl-javafx</code></td><td>实现 <code>PluginContext</code></td></tr>
+<tr><td>Swing 图形界面 (Win7)</td><td><code>jcurl-swing</code></td><td><code>SwingPluginContext</code>（实现 <code>PluginContext</code>）</td></tr>
+</table>
+
+<p>实际含义：</p>
+<ul>
+<li>同一个 <code>.java</code> 插件文件在 CLI、JavaFX 图形界面、Swing 图形界面中无需修改即可使用。</li>
+<li>四大扩展点、<code>@JcurlPlugin</code> 注解、<code>PluginContext</code> 方法以及模型类（<code>RequestConfig</code>、<code>ResponseData</code>、<code>Header</code>）在各版本中<strong>是同一套契约</strong>。</li>
+<li>只要仅依赖基础 <code>PluginContext</code> 接口，你的插件就可移植到每个版本。除非只面向 core/CLI 版本且需要其额外服务，否则不要强制转换为 <code>CorePluginContext</code>。</li>
+<li>只操作请求/响应数据并通过 <code>ctx.log()</code> 记录日志的插件完全可移植。</li>
+</ul>
+
+<div class="tip">
+面向 <code>PluginContext</code> 接口而非具体实现编写插件。仅此一条规则即可让你的插件在 Swing、JavaFX、CLI 中通用。
+</div>
+
+<p>准备好写第一个插件了吗？把上面的 <a href="#example-zh">DemoPlugin</a> 复制到 <code>./.api-client/plugins/</code>，重载，即可看到你的拦截器、变量和指标生效。</p>
+</section>
+
+</div>
+
+</div>
+
+<div class="footer">
+<p>Jcurl — MIT License — <a href="https://github.com/weacsoft/Jcurl" style="color:var(--accent)">GitHub Repository</a></p>
+</div>
+
+<script>
+function showLang(lang) {
+    document.querySelectorAll('.lang').forEach(el => el.classList.remove('active'));
+    document.getElementById('lang-' + lang).classList.add('active');
+    document.querySelectorAll('.lang-toggle button').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + lang).classList.add('active');
+}
+// Apply syntax highlighting once the DOM (and highlight.js) is ready
+document.addEventListener('DOMContentLoaded', function () {
+    if (window.hljs) {
+        document.querySelectorAll('pre code').forEach(function (block) {
+            hljs.highlightElement(block);
+        });
+    }
+});
+</script>
+</body>
+</html>
