@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jcurl - Auto-Test Import File Specification</title>
+<style>
+:root { --bg:#0d1117; --fg:#c9d1d9; --card:#161b22; --border:#30363d; --accent:#58a6ff; --code:#1e1e1e; --green:#3fb950; --orange:#d29922; --red:#f85149; --purple:#bc8cff; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;font-size:15px}
+.hero{text-align:center;padding:50px 20px;background:linear-gradient(135deg,#0d1117,#161b22);border-bottom:1px solid var(--border)}
+.hero h1{font-size:2.5rem;color:var(--accent);margin-bottom:10px}
+.hero p{font-size:1.1rem;color:var(--fg);opacity:0.8}
+.navbar{text-align:center;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.navbar a{color:var(--accent);text-decoration:none;margin:0 8px;font-size:0.95rem;padding:6px 16px;border-radius:6px;border:1px solid transparent;transition:all .15s}
+.navbar a:hover{border-color:var(--border);background:var(--bg)}
+.navbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.container{max-width:920px;margin:0 auto;padding:40px 20px}
+.lang-toggle{text-align:center;margin:20px 0}
+.lang-toggle button{padding:8px 20px;margin:0 5px;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:6px;cursor:pointer;font-size:0.95rem}
+.lang-toggle button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+section{margin-bottom:40px}
+h2{font-size:1.5rem;color:var(--accent);margin-bottom:15px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+h3{font-size:1.15rem;color:var(--fg);margin:20px 0 10px}
+h4{font-size:1rem;color:var(--purple);margin:16px 0 8px}
+p{margin-bottom:10px}
+code{background:var(--code);padding:2px 6px;border-radius:4px;font-family:'Consolas',monospace;font-size:0.88rem;color:#ce9178}
+pre{background:var(--code);padding:16px;border-radius:8px;overflow-x:auto;margin:12px 0;border:1px solid var(--border)}
+pre code{background:none;padding:0;color:#d4d4d4;font-size:0.85rem;line-height:1.5}
+table{width:100%;border-collapse:collapse;margin:15px 0}
+th,td{padding:8px 12px;text-align:left;border:1px solid var(--border);font-size:0.9rem}
+th{background:var(--card);color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin:15px 0}
+.card h3{color:var(--accent)}
+.tip{border-left:3px solid var(--green);padding-left:15px;margin:15px 0;color:var(--green)}
+.warn{border-left:3px solid var(--orange);padding-left:15px;margin:15px 0;color:var(--orange)}
+.danger{border-left:3px solid var(--red);padding-left:15px;margin:15px 0;color:var(--red)}
+.lang{display:none}
+.lang.active{display:block}
+.toc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin:20px 0}
+.toc h3{margin-top:0;color:var(--accent)}
+.toc ol{padding-left:20px}
+.toc li{margin:6px 0}
+.toc a{color:var(--accent);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.footer{text-align:center;padding:30px;border-top:1px solid var(--border);color:var(--fg);opacity:0.5}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.8rem;border:1px solid var(--border);margin-left:6px}
+.badge.green{color:var(--green);border-color:var(--green)}
+.badge.orange{color:var(--orange);border-color:var(--orange)}
+.badge.blue{color:var(--accent);border-color:var(--accent)}
+.paste-box{background:var(--code);border:2px dashed var(--accent);border-radius:8px;padding:20px;margin:15px 0;text-align:center}
+.paste-box p{margin:0;color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div class="hero">
+<h1>Auto-Test Import File Specification</h1>
+<p>Generate API test files that Jcurl can import &mdash; for AI assistants and developers</p>
+</div>
+
+<nav class="navbar">
+<a href="index.html">Home</a>
+<a href="plugin-development.html">Plugin Development</a>
+<a href="auto-test-guide.html" class="active">Auto-Test Import</a>
+</nav>
+
+<div class="container">
+
+<div class="lang-toggle">
+<button id="btn-en" class="active" onclick="showLang('en')">English</button>
+<button id="btn-zh" onclick="showLang('zh')">中文</button>
+</div>
+
+<!-- ENGLISH -->
+<div id="lang-en" class="lang active">
+
+<div class="toc">
+<h3>Table of Contents</h3>
+<ol>
+<li><a href="#en-overview">Overview &mdash; What Is This?</a></li>
+<li><a href="#en-formats">Supported Formats</a></li>
+<li><a href="#en-postman">Format 1: Postman v2.1 JSON (Recommended)</a></li>
+<li><a href="#en-openapi">Format 2: OpenAPI 3.0 JSON</a></li>
+<li><a href="#en-curl">Format 3: cURL Command</a></li>
+<li><a href="#en-variables">Variable System &amp; Request Chaining</a></li>
+<li><a href="#en-examples">Complete Examples</a></li>
+<li><a href="#en-ai-prompt">AI Prompt Template</a></li>
+<li><a href="#en-checklist">Generation Checklist</a></li>
+</ol>
+</div>
+
+<section id="en-overview">
+<h2>1. Overview &mdash; What Is This?</h2>
+<p>This document is a <strong>specification for AI assistants</strong> (and human developers). It teaches you how to generate <em>auto-test import files</em> &mdash; structured JSON or text files that describe HTTP API test cases and can be directly imported into <strong>Jcurl</strong> for execution.</p>
+
+<p><strong>Use case:</strong> If you are an AI helping someone build a project (a REST API, a web service, a microservice), you can generate an import file following this spec. The developer then imports it into Jcurl and immediately has all their API endpoints ready to test &mdash; no manual configuration needed.</p>
+
+<div class="card">
+<h3>Workflow</h3>
+<ol style="padding-left:20px;line-height:2">
+<li>AI reads the project's API definitions (routes, controllers, OpenAPI docs, etc.)</li>
+<li>AI generates a <code>.json</code> file in Postman v2.1 format following this spec</li>
+<li>Developer opens Jcurl &rarr; Import &rarr; selects the file</li>
+<li>All endpoints appear as a collection, ready to execute</li>
+</ol>
+</div>
+</section>
+
+<section id="en-formats">
+<h2>2. Supported Formats</h2>
+<p>Jcurl supports three import formats. <strong>Postman v2.1 is strongly recommended</strong> for AI-generated files because it supports the most features.</p>
+
+<table>
+<tr><th>Format</th><th>Extension</th><th>Features</th><th>Recommendation</th></tr>
+<tr><td><strong>Postman v2.1</strong></td><td><code>.json</code></td><td>Folders, variables, auth, all body types, query params, headers</td><td><span class="badge green">Best</span></td></tr>
+<tr><td><strong>OpenAPI 3.0</strong></td><td><code>.json</code></td><td>Paths by tag, parameters, request body type</td><td><span class="badge blue">Good</span></td></tr>
+<tr><td><strong>cURL</strong></td><td><code>.txt</code></td><td>Single request only, headers, body, method</td><td><span class="badge orange">Limited</span></td></tr>
+</table>
+</section>
+
+<section id="en-postman">
+<h2>3. Format 1: Postman v2.1 JSON <span class="badge green">Recommended</span></h2>
+
+<p>This is the most complete format. It supports nested folders, collection-level variables, per-request auth, and all body types.</p>
+
+<h3>3.1 Top-Level Structure</h3>
+<pre><code>{
+  "info": {
+    "name": "My API Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "any-unique-string"
+  },
+  "variable": [ ... ],
+  "item": [ ... ]
+}</code></pre>
+
+<table>
+<tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+<tr><td><code>info.name</code></td><td>string</td><td>Yes</td><td>Collection name shown in Jcurl</td></tr>
+<tr><td><code>info.schema</code></td><td>string</td><td>No</td><td>Postman schema URL (for compatibility)</td></tr>
+<tr><td><code>info._postman_id</code></td><td>string</td><td>No</td><td>Unique ID (auto-generated if omitted)</td></tr>
+<tr><td><code>variable</code></td><td>array</td><td>No</td><td>Collection-level variables (see <a href="#en-variables">&sect;6</a>)</td></tr>
+<tr><td><code>item</code></td><td>array</td><td>Yes</td><td>Top-level items (folders or requests)</td></tr>
+</table>
+
+<h3>3.2 Item Types: Folder vs Request</h3>
+
+<p>Each item in the <code>item</code> array is either a <strong>folder</strong> (contains nested items) or a <strong>request</strong> (contains a <code>request</code> object).</p>
+
+<h4>Folder</h4>
+<pre><code>{
+  "name": "User Management",
+  "item": [
+    { "name": "Login", "request": { ... } },
+    { "name": "Get Profile", "request": { ... } }
+  ]
+}</code></pre>
+
+<h4>Request</h4>
+<pre><code>{
+  "name": "Create User",
+  "request": {
+    "method": "POST",
+    "url": { ... },
+    "header": [ ... ],
+    "body": { ... },
+    "auth": { ... }
+  }
+}</code></pre>
+
+<div class="tip">
+<strong>Detection rule:</strong> If an item has an <code>item</code> array and no <code>request</code> field, it's a folder. If it has a <code>request</code> field, it's a request.
+</div>
+
+<h3>3.3 URL Structure</h3>
+
+<p>The <code>url</code> field can be a simple string or an object with query parameters:</p>
+
+<h4>Simple URL</h4>
+<pre><code>"url": "https://api.example.com/users"</code></pre>
+
+<h4>URL with Query Parameters</h4>
+<pre><code>"url": {
+  "raw": "https://api.example.com/users?page=1&limit=20",
+  "query": [
+    { "key": "page", "value": "1" },
+    { "key": "limit", "value": "20", "disabled": false }
+  ]
+}</code></pre>
+
+<table>
+<tr><th>Field</th><th>Type</th><th>Description</th></tr>
+<tr><td><code>raw</code></td><td>string</td><td>Full URL (used as the request URL)</td></tr>
+<tr><td><code>query</code></td><td>array</td><td>Query parameter list</td></tr>
+<tr><td><code>query[].key</code></td><td>string</td><td>Parameter name</td></tr>
+<tr><td><code>query[].value</code></td><td>string</td><td>Parameter value</td></tr>
+<tr><td><code>query[].disabled</code></td><td>boolean</td><td>If true, parameter is disabled (default: false)</td></tr>
+</table>
+
+<h3>3.4 Headers</h3>
+<pre><code>"header": [
+  { "key": "Content-Type", "value": "application/json" },
+  { "key": "Authorization", "value": "Bearer {{token}}", "disabled": false },
+  { "key": "X-Debug", "value": "true", "disabled": true }
+]</code></pre>
+
+<table>
+<tr><th>Field</th><th>Type</th><th>Description</th></tr>
+<tr><td><code>key</code></td><td>string</td><td>Header name</td></tr>
+<tr><td><code>value</code></td><td>string</td><td>Header value</td></tr>
+<tr><td><code>disabled</code></td><td>boolean</td><td>If true, header is disabled (default: false)</td></tr>
+</table>
+
+<h3>3.5 Body Types</h3>
+
+<p>The <code>body</code> object uses a <code>mode</code> field to specify the body type:</p>
+
+<h4>raw (JSON / XML / Text)</h4>
+<pre><code>"body": {
+  "mode": "raw",
+  "raw": "{\"name\":\"Alice\",\"email\":\"alice@example.com\"}",
+  "options": {
+    "raw": { "language": "json" }
+  }
+}</code></pre>
+<p>The <code>options.raw.language</code> can be <code>json</code>, <code>xml</code>, <code>html</code>, or <code>text</code>.</p>
+
+<h4>form-data (Multipart)</h4>
+<pre><code>"body": {
+  "mode": "formdata",
+  "formdata": [
+    { "key": "username", "value": "alice", "type": "text" },
+    { "key": "avatar", "src": "/path/to/file.jpg", "type": "file" },
+    { "key": "disabled_field", "value": "x", "type": "text", "disabled": true }
+  ]
+}</code></pre>
+
+<h4>x-www-form-urlencoded</h4>
+<pre><code>"body": {
+  "mode": "urlencoded",
+  "urlencoded": [
+    { "key": "grant_type", "value": "password" },
+    { "key": "username", "value": "alice" },
+    { "key": "password", "value": "secret123" }
+  ]
+}</code></pre>
+
+<table>
+<tr><th>Mode</th><th>Jcurl Body Type</th><th>Field Name</th><th>Description</th></tr>
+<tr><td><code>raw</code></td><td>raw</td><td><code>raw</code></td><td>Raw text body (JSON/XML/text)</td></tr>
+<tr><td><code>formdata</code></td><td>form-data</td><td><code>formdata</code></td><td>Multipart form with file support</td></tr>
+<tr><td><code>urlencoded</code></td><td>x-www-form-urlencoded</td><td><code>urlencoded</code></td><td>URL-encoded form data</td></tr>
+<tr><td><code>file</code></td><td>binary</td><td><code>file.src</code></td><td>Binary file upload</td></tr>
+</table>
+
+<h3>3.6 Authentication</h3>
+
+<h4>Basic Auth</h4>
+<pre><code>"auth": {
+  "type": "basic",
+  "basic": [
+    { "key": "username", "value": "admin" },
+    { "key": "password", "value": "secret" }
+  ]
+}</code></pre>
+
+<h4>Bearer Token</h4>
+<pre><code>"auth": {
+  "type": "bearer",
+  "bearer": [
+    { "key": "token", "value": "{{token}}" }
+  ]
+}</code></pre>
+
+<h4>API Key</h4>
+<pre><code>"auth": {
+  "type": "apikey",
+  "apikey": [
+    { "key": "key", "value": "X-API-Key" },
+    { "key": "value", "value": "abc123" },
+    { "key": "in", "value": "header" }
+  ]
+}</code></pre>
+<p>The <code>in</code> field can be <code>header</code> or <code>query</code>.</p>
+
+<h3>3.7 Collection Variables</h3>
+
+<p>Variables defined at the collection level can be referenced anywhere using <code>{{variable_name}}</code> syntax:</p>
+<pre><code>"variable": [
+  { "key": "base_url", "value": "https://api.example.com" },
+  { "key": "token", "value": "" },
+  { "key": "user_id", "value": "" }
+]</code></pre>
+
+<p>Then in requests:</p>
+<pre><code>"url": { "raw": "{{base_url}}/users/{{user_id}}" }</code></pre>
+</section>
+
+<section id="en-openapi">
+<h2>4. Format 2: OpenAPI 3.0 JSON</h2>
+
+<p>If your project already has an OpenAPI/Swagger specification, Jcurl can import it directly. Endpoints are grouped by their first <code>tag</code>.</p>
+
+<h3>Structure</h3>
+<pre><code>{
+  "openapi": "3.0.0",
+  "info": { "title": "My API", "version": "1.0.0" },
+  "servers": [
+    { "url": "https://api.example.com" }
+  ],
+  "paths": {
+    "/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "List all users",
+        "parameters": [
+          { "name": "page", "in": "query", "description": "Page number" },
+          { "name": "X-Trace-Id", "in": "header", "description": "Trace ID" }
+        ]
+      },
+      "post": {
+        "tags": ["Users"],
+        "summary": "Create user",
+        "requestBody": {
+          "content": {
+            "application/json": {}
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+
+<div class="warn">
+<strong>Limitations:</strong> OpenAPI import does not support auth configuration, body content, or collection variables. It only imports paths, methods, parameters (query/header), and body type. For full-featured test files, use Postman v2.1 format.
+</div>
+</section>
+
+<section id="en-curl">
+<h2>5. Format 3: cURL Command</h2>
+
+<p>For quick single-request imports, a cURL command string can be used. This is the simplest but most limited format.</p>
+
+<pre><code>curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOi..." \
+  -d '{"name":"Alice","email":"alice@example.com"}' \
+  https://api.example.com/users</code></pre>
+
+<h3>Supported cURL Options</h3>
+<table>
+<tr><th>Option</th><th>Parsed As</th></tr>
+<tr><td><code>http(s)://...</code></td><td>Request URL</td></tr>
+<tr><td><code>-X METHOD</code></td><td>HTTP method</td></tr>
+<tr><td><code>-H "Key: Value"</code></td><td>Header</td></tr>
+<tr><td><code>-d 'data'</code></td><td>Raw body (POST if no method specified)</td></tr>
+<tr><td><code>--data-raw 'data'</code></td><td>Raw body (same as -d)</td></tr>
+<tr><td><code>--url URL</code></td><td>Alternative URL specification</td></tr>
+</table>
+
+<div class="warn">
+<strong>Limitations:</strong> cURL import creates a single request only (no folders, no variables, no collection-level auth).
+</div>
+</section>
+
+<section id="en-variables">
+<h2>6. Variable System &amp; Request Chaining</h2>
+
+<p>Variables are the key to <strong>request chaining</strong> &mdash; using the output of one request as the input of another (e.g., login &rarr; extract token &rarr; use token in subsequent requests).</p>
+
+<h3>6.1 Defining Variables</h3>
+<p>Define variables at the collection level:</p>
+<pre><code>"variable": [
+  { "key": "base_url", "value": "https://api.example.com" },
+  { "key": "token", "value": "" },
+  { "key": "user_id", "value": "" }
+]</pre></code>
+
+<h3>6.2 Using Variables</h3>
+<p>Reference variables with double curly braces <code>{{variable_name}}</code> in:</p>
+<ul style="padding-left:20px;line-height:2">
+<li><strong>URL</strong>: <code>"raw": "{{base_url}}/users"</code></li>
+<li><strong>Headers</strong>: <code>"value": "Bearer {{token}}"</code></li>
+<li><strong>Body</strong>: <code>"raw": "{\"user_id\":\"{{user_id}}\"}"</code></li>
+<li><strong>Auth</strong>: <code>"value": "{{token}}"</code></li>
+</ul>
+
+<h3>6.3 Built-in Dynamic Functions</h3>
+<p>These can be used anywhere variables are supported:</p>
+<table>
+<tr><th>Function</th><th>Description</th><th>Example Output</th></tr>
+<tr><td><code>{{$timestamp}}</code></td><td>Current Unix timestamp</td><td><code>1720000000</code></td></tr>
+<tr><td><code>{{$uuid}}</code></td><td>Random UUID</td><td><code>a1b2c3d4-e5f6-...</code></td></tr>
+<tr><td><code>{{$randomInt}}</code></td><td>Random integer</td><td><code>42</code></td></tr>
+<tr><td><code>{{$datetime}}</code></td><td>Current ISO datetime</td><td><code>2026-07-07T12:00:00Z</code></td></tr>
+</table>
+
+<h3>6.4 Request Chaining Pattern</h3>
+<p>While Jcurl does not auto-extract variables from responses via import files, the developer can:</p>
+<ol style="padding-left:20px;line-height:2">
+<li>Run the login request</li>
+<li>Copy the token from the response</li>
+<li>Update the <code>token</code> variable in the environment/variables panel</li>
+<li>All subsequent requests using <code>{{token}}</code> will automatically use the new value</li>
+</ol>
+
+<div class="tip">
+<strong>Pro tip:</strong> Define all chainable variables with empty values in the import file. The developer fills them in after running the first request. This makes the test flow self-documenting.
+</div>
+</section>
+
+<section id="en-examples">
+<h2>7. Complete Examples</h2>
+
+<h3>7.1 Blog API (Postman v2.1)</h3>
+<p>A complete blog API with auth, CRUD operations, and variable chaining:</p>
+<pre><code>{
+  "info": {
+    "name": "Blog API Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080/api" },
+    { "key": "token", "value": "" },
+    { "key": "post_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/auth/login" },
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"admin@blog.com\",\"password\":\"admin123\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/auth/register" },
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"{{$uuid}}\",\"email\":\"test{{$randomInt}}@test.com\",\"password\":\"Test1234\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Posts",
+      "item": [
+        {
+          "name": "List Posts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/posts?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            }
+          }
+        },
+        {
+          "name": "Create Post",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/posts" },
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"My First Post\",\"content\":\"Hello World!\",\"tags\":[\"intro\",\"test\"]}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Get Post by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/posts/{{post_id}}" },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            }
+          }
+        },
+        {
+          "name": "Update Post",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{base_url}}/posts/{{post_id}}" },
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Updated Title\",\"content\":\"Updated content\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Delete Post",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/posts/{{post_id}}" },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}</code></pre>
+
+<h3>7.2 File Upload (form-data)</h3>
+<pre><code>{
+  "name": "Upload File",
+  "request": {
+    "method": "POST",
+    "url": { "raw": "{{base_url}}/upload" },
+    "header": [
+      { "key": "Authorization", "value": "Bearer {{token}}" }
+    ],
+    "body": {
+      "mode": "formdata",
+      "formdata": [
+        { "key": "description", "value": "Profile photo", "type": "text" },
+        { "key": "file", "src": "/path/to/photo.jpg", "type": "file" }
+      ]
+    }
+  }
+}</code></pre>
+
+<h3>7.3 API Key Auth in Query</h3>
+<pre><code>{
+  "name": "Search Products",
+  "request": {
+    "method": "GET",
+    "url": {
+      "raw": "https://api.shop.com/products?q=laptop",
+      "query": [
+        { "key": "q", "value": "laptop" }
+      ]
+    },
+    "auth": {
+      "type": "apikey",
+      "apikey": [
+        { "key": "key", "value": "api_key" },
+        { "key": "value", "value": "sk-1234567890" },
+        { "key": "in", "value": "query" }
+      ]
+    }
+  }
+}</code></pre>
+</section>
+
+<section id="en-ai-prompt">
+<h2>8. AI Prompt Template</h2>
+
+<p>When you want an AI to generate an import file for your project, use this prompt:</p>
+
+<div class="card">
+<h3>Prompt for AI</h3>
+<pre><code>You are helping me build a project. I need you to generate a Jcurl 
+auto-test import file (Postman v2.1 JSON format) for all the API 
+endpoints in my project.
+
+Requirements:
+1. Output a single valid JSON file in Postman v2.1 collection format
+2. Set "info.name" to the project name
+3. Define collection-level variables:
+   - "base_url" with the server URL
+   - "token" with empty value (for auth chaining)
+   - Any other IDs needed for request chaining
+4. Group endpoints into folders by module/controller
+5. For each endpoint include:
+   - method, url (use {{base_url}} prefix)
+   - headers (Content-Type for body requests)
+   - body (raw JSON for POST/PUT/PATCH)
+   - auth (bearer with {{token}} for protected routes)
+6. Use {{variable}} syntax for chainable values
+7. Use {{$uuid}}, {{$timestamp}}, {{$randomInt}} for test data
+8. Make sure the JSON is valid and complete
+
+Here are my API endpoints:
+[describe or paste your routes/controllers/OpenAPI spec here]</code></pre>
+</div>
+
+<p>After the AI generates the JSON, save it as <code>.json</code> and import into Jcurl via the Import menu.</p>
+</section>
+
+<section id="en-checklist">
+<h2>9. Generation Checklist</h2>
+
+<p>Before finalizing your import file, verify:</p>
+
+<div class="card">
+<h3>Mandatory</h3>
+<table>
+<tr><th>#</th><th>Check</th></tr>
+<tr><td>1</td><td>Valid JSON (no trailing commas, no comments)</td></tr>
+<tr><td>2</td><td><code>info.name</code> is set</td></tr>
+<tr><td>3</td><td><code>item</code> array is non-empty</td></tr>
+<tr><td>4</td><td>Each request has <code>method</code> and <code>url</code></td></tr>
+<tr><td>5</td><td>URL uses <code>{{base_url}}</code> variable prefix</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>Recommended</h3>
+<table>
+<tr><th>#</th><th>Check</th></tr>
+<tr><td>6</td><td>Endpoints grouped into folders by module</td></tr>
+<tr><td>7</td><td><code>base_url</code> variable defined at collection level</td></tr>
+<tr><td>8</td><td><code>token</code> variable defined (empty) for auth chaining</td></tr>
+<tr><td>9</td><td>Protected routes have <code>auth.type: bearer</code> with <code>{{token}}</code></td></tr>
+<tr><td>10</td><td>POST/PUT/PATCH requests have <code>Content-Type: application/json</code> header</td></tr>
+<tr><td>11</td><td>Body <code>raw</code> is a valid JSON string (escaped quotes)</td></tr>
+<tr><td>12</td><td>Test data uses dynamic functions (<code>{{$uuid}}</code>, <code>{{$randomInt}}</code>)</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>Common Mistakes to Avoid</h3>
+<table>
+<tr><th>Mistake</th><th>Fix</th></tr>
+<tr><td>Unescaped quotes in body raw</td><td>Use <code>\"</code> inside JSON strings</td></tr>
+<tr><td>Missing <code>mode</code> in body</td><td>Always set <code>"mode": "raw"</code></td></tr>
+<tr><td>Hardcoded URLs</td><td>Use <code>{{base_url}}</code> variable</td></tr>
+<tr><td>Hardcoded tokens</td><td>Use <code>{{token}}</code> variable</td></tr>
+<tr><td>Folder without <code>item</code> array</td><td>Folders must have <code>item: [...]</code></td></tr>
+<tr><td>Request inside folder missing <code>request</code></td><td>Each request item needs a <code>request</code> object</td></tr>
+</table>
+</div>
+</section>
+
+</div>
+
+<!-- CHINESE -->
+<div id="lang-zh" class="lang">
+
+<div class="toc">
+<h3>目录</h3>
+<ol>
+<li><a href="#zh-overview">概述 &mdash; 这是什么?</a></li>
+<li><a href="#zh-formats">支持的格式</a></li>
+<li><a href="#zh-postman">格式一: Postman v2.1 JSON (推荐)</a></li>
+<li><a href="#zh-openapi">格式二: OpenAPI 3.0 JSON</a></li>
+<li><a href="#zh-curl">格式三: cURL 命令</a></li>
+<li><a href="#zh-variables">变量系统与请求链</a></li>
+<li><a href="#zh-examples">完整示例</a></li>
+<li><a href="#zh-ai-prompt">AI 提示词模板</a></li>
+<li><a href="#zh-checklist">生成检查清单</a></li>
+</ol>
+</div>
+
+<section id="zh-overview">
+<h2>1. 概述 &mdash; 这是什么?</h2>
+<p>本文档是写给 <strong>AI 助手</strong>（以及人类开发者）的规范。它教你如何生成 <em>自动测试导入文件</em> &mdash; 一种结构化的 JSON 或文本文件，描述 HTTP API 测试用例，可直接导入 <strong>Jcurl</strong> 执行。</p>
+
+<p><strong>使用场景:</strong> 如果你是一个 AI，正在帮助某人构建项目（REST API、Web 服务、微服务），你可以按照本规范生成一个导入文件。开发者将其导入 Jcurl 后，即可立即拥有所有 API 端点的测试用例 &mdash; 无需手动配置。</p>
+
+<div class="card">
+<h3>工作流程</h3>
+<ol style="padding-left:20px;line-height:2">
+<li>AI 阅读项目的 API 定义（路由、控制器、OpenAPI 文档等）</li>
+<li>AI 按照本规范生成 Postman v2.1 格式的 <code>.json</code> 文件</li>
+<li>开发者在 Jcurl 中: 导入 &rarr; 选择文件</li>
+<li>所有端点作为集合出现，可直接执行</li>
+</ol>
+</div>
+</section>
+
+<section id="zh-formats">
+<h2>2. 支持的格式</h2>
+<p>Jcurl 支持三种导入格式。<strong>强烈推荐 Postman v2.1</strong>，因为它支持的功能最多。</p>
+
+<table>
+<tr><th>格式</th><th>扩展名</th><th>支持功能</th><th>推荐度</th></tr>
+<tr><td><strong>Postman v2.1</strong></td><td><code>.json</code></td><td>文件夹、变量、认证、所有 body 类型、查询参数、请求头</td><td><span class="badge green">最佳</span></td></tr>
+<tr><td><strong>OpenAPI 3.0</strong></td><td><code>.json</code></td><td>按 tag 分组的路径、参数、请求体类型</td><td><span class="badge blue">良好</span></td></tr>
+<tr><td><strong>cURL</strong></td><td><code>.txt</code></td><td>仅单个请求、请求头、body、方法</td><td><span class="badge orange">有限</span></td></tr>
+</table>
+</section>
+
+<section id="zh-postman">
+<h2>3. 格式一: Postman v2.1 JSON <span class="badge green">推荐</span></h2>
+
+<p>这是最完整的格式，支持嵌套文件夹、集合级变量、每请求独立认证和所有 body 类型。</p>
+
+<h3>3.1 顶层结构</h3>
+<pre><code>{
+  "info": {
+    "name": "我的 API 测试",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "任意唯一字符串"
+  },
+  "variable": [ ... ],
+  "item": [ ... ]
+}</code></pre>
+
+<table>
+<tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+<tr><td><code>info.name</code></td><td>string</td><td>是</td><td>集合名称（显示在 Jcurl 中）</td></tr>
+<tr><td><code>info.schema</code></td><td>string</td><td>否</td><td>Postman schema URL（兼容性用）</td></tr>
+<tr><td><code>info._postman_id</code></td><td>string</td><td>否</td><td>唯一 ID（省略则自动生成）</td></tr>
+<tr><td><code>variable</code></td><td>array</td><td>否</td><td>集合级变量（见 <a href="#zh-variables">&sect;6</a>）</td></tr>
+<tr><td><code>item</code></td><td>array</td><td>是</td><td>顶层项目（文件夹或请求）</td></tr>
+</table>
+
+<h3>3.2 项目类型: 文件夹 vs 请求</h3>
+
+<p><code>item</code> 数组中的每个项目要么是 <strong>文件夹</strong>（包含嵌套项目），要么是 <strong>请求</strong>（包含 <code>request</code> 对象）。</p>
+
+<h4>文件夹</h4>
+<pre><code>{
+  "name": "用户管理",
+  "item": [
+    { "name": "登录", "request": { ... } },
+    { "name": "获取资料", "request": { ... } }
+  ]
+}</code></pre>
+
+<h4>请求</h4>
+<pre><code>{
+  "name": "创建用户",
+  "request": {
+    "method": "POST",
+    "url": { ... },
+    "header": [ ... ],
+    "body": { ... },
+    "auth": { ... }
+  }
+}</code></pre>
+
+<div class="tip">
+<strong>判断规则:</strong> 如果项目有 <code>item</code> 数组且没有 <code>request</code> 字段，则是文件夹。如果有 <code>request</code> 字段，则是请求。
+</div>
+
+<h3>3.3 URL 结构</h3>
+
+<p><code>url</code> 字段可以是简单字符串或带查询参数的对象:</p>
+
+<h4>简单 URL</h4>
+<pre><code>"url": "https://api.example.com/users"</code></pre>
+
+<h4>带查询参数的 URL</h4>
+<pre><code>"url": {
+  "raw": "https://api.example.com/users?page=1&limit=20",
+  "query": [
+    { "key": "page", "value": "1" },
+    { "key": "limit", "value": "20", "disabled": false }
+  ]
+}</code></pre>
+
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>raw</code></td><td>string</td><td>完整 URL（用作请求 URL）</td></tr>
+<tr><td><code>query</code></td><td>array</td><td>查询参数列表</td></tr>
+<tr><td><code>query[].key</code></td><td>string</td><td>参数名</td></tr>
+<tr><td><code>query[].value</code></td><td>string</td><td>参数值</td></tr>
+<tr><td><code>query[].disabled</code></td><td>boolean</td><td>true 表示禁用该参数（默认: false）</td></tr>
+</table>
+
+<h3>3.4 请求头</h3>
+<pre><code>"header": [
+  { "key": "Content-Type", "value": "application/json" },
+  { "key": "Authorization", "value": "Bearer {{token}}", "disabled": false },
+  { "key": "X-Debug", "value": "true", "disabled": true }
+]</code></pre>
+
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>key</code></td><td>string</td><td>请求头名称</td></tr>
+<tr><td><code>value</code></td><td>string</td><td>请求头值</td></tr>
+<tr><td><code>disabled</code></td><td>boolean</td><td>true 表示禁用该头（默认: false）</td></tr>
+</table>
+
+<h3>3.5 Body 类型</h3>
+
+<p><code>body</code> 对象使用 <code>mode</code> 字段指定 body 类型:</p>
+
+<h4>raw (JSON / XML / 文本)</h4>
+<pre><code>"body": {
+  "mode": "raw",
+  "raw": "{\"name\":\"Alice\",\"email\":\"alice@example.com\"}",
+  "options": {
+    "raw": { "language": "json" }
+  }
+}</code></pre>
+<p><code>options.raw.language</code> 可以是 <code>json</code>、<code>xml</code>、<code>html</code> 或 <code>text</code>。</p>
+
+<h4>form-data (Multipart 表单)</h4>
+<pre><code>"body": {
+  "mode": "formdata",
+  "formdata": [
+    { "key": "username", "value": "alice", "type": "text" },
+    { "key": "avatar", "src": "/path/to/file.jpg", "type": "file" },
+    { "key": "disabled_field", "value": "x", "type": "text", "disabled": true }
+  ]
+}</code></pre>
+
+<h4>x-www-form-urlencoded</h4>
+<pre><code>"body": {
+  "mode": "urlencoded",
+  "urlencoded": [
+    { "key": "grant_type", "value": "password" },
+    { "key": "username", "value": "alice" },
+    { "key": "password", "value": "secret123" }
+  ]
+}</code></pre>
+
+<table>
+<tr><th>Mode</th><th>Jcurl Body 类型</th><th>字段名</th><th>说明</th></tr>
+<tr><td><code>raw</code></td><td>raw</td><td><code>raw</code></td><td>原始文本 body（JSON/XML/文本）</td></tr>
+<tr><td><code>formdata</code></td><td>form-data</td><td><code>formdata</code></td><td>Multipart 表单，支持文件上传</td></tr>
+<tr><td><code>urlencoded</code></td><td>x-www-form-urlencoded</td><td><code>urlencoded</code></td><td>URL 编码表单数据</td></tr>
+<tr><td><code>file</code></td><td>binary</td><td><code>file.src</code></td><td>二进制文件上传</td></tr>
+</table>
+
+<h3>3.6 认证</h3>
+
+<h4>Basic 认证</h4>
+<pre><code>"auth": {
+  "type": "basic",
+  "basic": [
+    { "key": "username", "value": "admin" },
+    { "key": "password", "value": "secret" }
+  ]
+}</code></pre>
+
+<h4>Bearer Token</h4>
+<pre><code>"auth": {
+  "type": "bearer",
+  "bearer": [
+    { "key": "token", "value": "{{token}}" }
+  ]
+}</code></pre>
+
+<h4>API Key</h4>
+<pre><code>"auth": {
+  "type": "apikey",
+  "apikey": [
+    { "key": "key", "value": "X-API-Key" },
+    { "key": "value", "value": "abc123" },
+    { "key": "in", "value": "header" }
+  ]
+}</code></pre>
+<p><code>in</code> 字段可以是 <code>header</code> 或 <code>query</code>。</p>
+
+<h3>3.7 集合变量</h3>
+
+<p>集合级定义的变量可在任何地方通过 <code>{{variable_name}}</code> 语法引用:</p>
+<pre><code>"variable": [
+  { "key": "base_url", "value": "https://api.example.com" },
+  { "key": "token", "value": "" },
+  { "key": "user_id", "value": "" }
+]</code></pre>
+
+<p>在请求中使用:</p>
+<pre><code>"url": { "raw": "{{base_url}}/users/{{user_id}}" }</code></pre>
+</section>
+
+<section id="zh-openapi">
+<h2>4. 格式二: OpenAPI 3.0 JSON</h2>
+
+<p>如果你的项目已有 OpenAPI/Swagger 规范，Jcurl 可直接导入。端点按第一个 <code>tag</code> 分组。</p>
+
+<h3>结构</h3>
+<pre><code>{
+  "openapi": "3.0.0",
+  "info": { "title": "我的 API", "version": "1.0.0" },
+  "servers": [
+    { "url": "https://api.example.com" }
+  ],
+  "paths": {
+    "/users": {
+      "get": {
+        "tags": ["用户"],
+        "summary": "获取用户列表",
+        "parameters": [
+          { "name": "page", "in": "query", "description": "页码" },
+          { "name": "X-Trace-Id", "in": "header", "description": "追踪 ID" }
+        ]
+      },
+      "post": {
+        "tags": ["用户"],
+        "summary": "创建用户",
+        "requestBody": {
+          "content": {
+            "application/json": {}
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+
+<div class="warn">
+<strong>限制:</strong> OpenAPI 导入不支持认证配置、body 内容或集合变量。仅导入路径、方法、参数（query/header）和 body 类型。如需完整测试文件，请使用 Postman v2.1 格式。
+</div>
+</section>
+
+<section id="zh-curl">
+<h2>5. 格式三: cURL 命令</h2>
+
+<p>用于快速导入单个请求，是最简单但最受限的格式。</p>
+
+<pre><code>curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOi..." \
+  -d '{"name":"Alice","email":"alice@example.com"}' \
+  https://api.example.com/users</code></pre>
+
+<h3>支持的 cURL 选项</h3>
+<table>
+<tr><th>选项</th><th>解析为</th></tr>
+<tr><td><code>http(s)://...</code></td><td>请求 URL</td></tr>
+<tr><td><code>-X METHOD</code></td><td>HTTP 方法</td></tr>
+<tr><td><code>-H "Key: Value"</code></td><td>请求头</td></tr>
+<tr><td><code>-d 'data'</code></td><td>原始 body（未指定方法时默认 POST）</td></tr>
+<tr><td><code>--data-raw 'data'</code></td><td>原始 body（同 -d）</td></tr>
+<tr><td><code>--url URL</code></td><td>替代的 URL 指定方式</td></tr>
+</table>
+
+<div class="warn">
+<strong>限制:</strong> cURL 导入仅创建单个请求（无文件夹、无变量、无集合级认证）。
+</div>
+</section>
+
+<section id="zh-variables">
+<h2>6. 变量系统与请求链</h2>
+
+<p>变量是实现 <strong>请求链</strong> 的关键 &mdash; 将一个请求的输出作为另一个请求的输入（例如: 登录 &rarr; 提取 token &rarr; 在后续请求中使用 token）。</p>
+
+<h3>6.1 定义变量</h3>
+<p>在集合级定义变量:</p>
+<pre><code>"variable": [
+  { "key": "base_url", "value": "https://api.example.com" },
+  { "key": "token", "value": "" },
+  { "key": "user_id", "value": "" }
+]</code></pre>
+
+<h3>6.2 使用变量</h3>
+<p>用双花括号 <code>{{variable_name}}</code> 在以下位置引用变量:</p>
+<ul style="padding-left:20px;line-height:2">
+<li><strong>URL</strong>: <code>"raw": "{{base_url}}/users"</code></li>
+<li><strong>请求头</strong>: <code>"value": "Bearer {{token}}"</code></li>
+<li><strong>Body</strong>: <code>"raw": "{\"user_id\":\"{{user_id}}\"}"</code></li>
+<li><strong>认证</strong>: <code>"value": "{{token}}"</code></li>
+</ul>
+
+<h3>6.3 内置动态函数</h3>
+<p>可在任何支持变量的地方使用:</p>
+<table>
+<tr><th>函数</th><th>说明</th><th>示例输出</th></tr>
+<tr><td><code>{{$timestamp}}</code></td><td>当前 Unix 时间戳</td><td><code>1720000000</code></td></tr>
+<tr><td><code>{{$uuid}}</code></td><td>随机 UUID</td><td><code>a1b2c3d4-e5f6-...</code></td></tr>
+<tr><td><code>{{$randomInt}}</code></td><td>随机整数</td><td><code>42</code></td></tr>
+<tr><td><code>{{$datetime}}</code></td><td>当前 ISO 日期时间</td><td><code>2026-07-07T12:00:00Z</code></td></tr>
+</table>
+
+<h3>6.4 请求链示例</h3>
+<p>虽然 Jcurl 不会通过导入文件自动从响应中提取变量，但开发者可以:</p>
+<ol style="padding-left:20px;line-height:2">
+<li>运行登录请求</li>
+<li>从响应中复制 token</li>
+<li>在环境/变量面板中更新 <code>token</code> 变量</li>
+<li>所有使用 <code>{{token}}</code> 的后续请求将自动使用新值</li>
+</ol>
+
+<div class="tip">
+<strong>建议:</strong> 在导入文件中将所有可链接变量定义为空值。开发者在运行第一个请求后填入值。这样测试流程就自带文档说明。
+</div>
+</section>
+
+<section id="zh-examples">
+<h2>7. 完整示例</h2>
+
+<h3>7.1 博客 API (Postman v2.1)</h3>
+<p>完整的博客 API，包含认证、CRUD 操作和变量链接:</p>
+<pre><code>{
+  "info": {
+    "name": "博客 API 测试",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080/api" },
+    { "key": "token", "value": "" },
+    { "key": "post_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "认证",
+      "item": [
+        {
+          "name": "登录",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/auth/login" },
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"admin@blog.com\",\"password\":\"admin123\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "注册",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/auth/register" },
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"{{$uuid}}\",\"email\":\"test{{$randomInt}}@test.com\",\"password\":\"Test1234\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "文章",
+      "item": [
+        {
+          "name": "文章列表",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/posts?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            }
+          }
+        },
+        {
+          "name": "创建文章",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/posts" },
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"我的第一篇文章\",\"content\":\"你好世界！\",\"tags\":[\"intro\",\"test\"]}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "获取文章详情",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/posts/{{post_id}}" },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            }
+          }
+        },
+        {
+          "name": "更新文章",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{base_url}}/posts/{{post_id}}" },
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"更新标题\",\"content\":\"更新内容\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "删除文章",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/posts/{{post_id}}" },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}" }]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}</code></pre>
+
+<h3>7.2 文件上传 (form-data)</h3>
+<pre><code>{
+  "name": "上传文件",
+  "request": {
+    "method": "POST",
+    "url": { "raw": "{{base_url}}/upload" },
+    "header": [
+      { "key": "Authorization", "value": "Bearer {{token}}" }
+    ],
+    "body": {
+      "mode": "formdata",
+      "formdata": [
+        { "key": "description", "value": "头像", "type": "text" },
+        { "key": "file", "src": "/path/to/photo.jpg", "type": "file" }
+      ]
+    }
+  }
+}</code></pre>
+
+<h3>7.3 查询参数中的 API Key 认证</h3>
+<pre><code>{
+  "name": "搜索商品",
+  "request": {
+    "method": "GET",
+    "url": {
+      "raw": "https://api.shop.com/products?q=laptop",
+      "query": [
+        { "key": "q", "value": "laptop" }
+      ]
+    },
+    "auth": {
+      "type": "apikey",
+      "apikey": [
+        { "key": "key", "value": "api_key" },
+        { "key": "value", "value": "sk-1234567890" },
+        { "key": "in", "value": "query" }
+      ]
+    }
+  }
+}</code></pre>
+</section>
+
+<section id="zh-ai-prompt">
+<h2>8. AI 提示词模板</h2>
+
+<p>当你想让 AI 为你的项目生成导入文件时，使用以下提示词:</p>
+
+<div class="card">
+<h3>给 AI 的提示词</h3>
+<pre><code>你正在帮助我构建一个项目。我需要你为项目中所有 API 端点
+生成一个 Jcurl 自动测试导入文件（Postman v2.1 JSON 格式）。
+
+要求:
+1. 输出一个 Postman v2.1 集合格式的有效 JSON 文件
+2. 设置 "info.name" 为项目名称
+3. 定义集合级变量:
+   - "base_url" 服务器 URL
+   - "token" 空值（用于认证链接）
+   - 其他请求链接所需的 ID
+4. 按模块/控制器将端点分组为文件夹
+5. 每个端点包含:
+   - method, url（使用 {{base_url}} 前缀）
+   - headers（body 请求需要 Content-Type）
+   - body（POST/PUT/PATCH 用 raw JSON）
+   - auth（受保护路由用 bearer + {{token}}）
+6. 可链接的值使用 {{variable}} 语法
+7. 测试数据使用 {{$uuid}}, {{$timestamp}}, {{$randomInt}}
+8. 确保 JSON 有效且完整
+
+以下是我的 API 端点:
+[在此描述或粘贴你的路由/控制器/OpenAPI 规范]</code></pre>
+</div>
+
+<p>AI 生成 JSON 后，保存为 <code>.json</code> 文件，在 Jcurl 中通过导入菜单导入。</p>
+</section>
+
+<section id="zh-checklist">
+<h2>9. 生成检查清单</h2>
+
+<p>在最终确认导入文件前，请检查:</p>
+
+<div class="card">
+<h3>必须项</h3>
+<table>
+<tr><th>#</th><th>检查项</th></tr>
+<tr><td>1</td><td>JSON 格式有效（无尾逗号、无注释）</td></tr>
+<tr><td>2</td><td><code>info.name</code> 已设置</td></tr>
+<tr><td>3</td><td><code>item</code> 数组非空</td></tr>
+<tr><td>4</td><td>每个请求有 <code>method</code> 和 <code>url</code></td></tr>
+<tr><td>5</td><td>URL 使用 <code>{{base_url}}</code> 变量前缀</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>建议项</h3>
+<table>
+<tr><th>#</th><th>检查项</th></tr>
+<tr><td>6</td><td>端点按模块分组为文件夹</td></tr>
+<tr><td>7</td><td>集合级定义了 <code>base_url</code> 变量</td></tr>
+<tr><td>8</td><td>定义了 <code>token</code> 变量（空值）用于认证链接</td></tr>
+<tr><td>9</td><td>受保护路由有 <code>auth.type: bearer</code> + <code>{{token}}</code></td></tr>
+<tr><td>10</td><td>POST/PUT/PATCH 请求有 <code>Content-Type: application/json</code> 头</td></tr>
+<tr><td>11</td><td>body <code>raw</code> 是有效的 JSON 字符串（转义引号）</td></tr>
+<tr><td>12</td><td>测试数据使用动态函数（<code>{{$uuid}}</code>, <code>{{$randomInt}}</code>）</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>常见错误</h3>
+<table>
+<tr><th>错误</th><th>修复</th></tr>
+<tr><td>body raw 中引号未转义</td><td>在 JSON 字符串中使用 <code>\"</code></td></tr>
+<tr><td>body 缺少 <code>mode</code></td><td>始终设置 <code>"mode": "raw"</code></td></tr>
+<tr><td>URL 硬编码</td><td>使用 <code>{{base_url}}</code> 变量</td></tr>
+<tr><td>token 硬编码</td><td>使用 <code>{{token}}</code> 变量</td></tr>
+<tr><td>文件夹缺少 <code>item</code> 数组</td><td>文件夹必须有 <code>item: [...]</code></td></tr>
+<tr><td>文件夹内请求缺少 <code>request</code></td><td>每个请求项需要有 <code>request</code> 对象</td></tr>
+</table>
+</div>
+</section>
+
+</div>
+
+</div>
+
+<div class="footer">
+<p>Jcurl &mdash; MIT License &mdash; <a href="https://github.com/weacsoft/Jcurl" style="color:var(--accent)">GitHub Repository</a></p>
+</div>
+
+<script>
+function showLang(lang) {
+    document.querySelectorAll('.lang').forEach(el => el.classList.remove('active'));
+    document.getElementById('lang-' + lang).classList.add('active');
+    document.querySelectorAll('.lang-toggle button').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + lang).classList.add('active');
+}
+</script>
+</body>
+</html>
