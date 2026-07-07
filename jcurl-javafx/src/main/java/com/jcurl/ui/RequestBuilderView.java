@@ -19,6 +19,7 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
+import javafx.collections.transformation.TransformationList;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -91,6 +92,8 @@ public class RequestBuilderView implements RequestSelectionListener {
     private final HistoryService historyService;
     private final EnvironmentService environmentService;
     private final DefaultHeaderProvider defaultHeaderProvider;
+    /** Cookie 管理服务 (用于预览将随请求发送的 Cookie) */
+    private final CookieService cookieService;
 
     /** 响应监听器(由响应展示视图设置) */
     private ResponseListener responseListener;
@@ -116,6 +119,10 @@ public class RequestBuilderView implements RequestSelectionListener {
     // Params 标签页
     private TableView<KeyValueRow> paramsTable;
     private final ObservableList<KeyValueRow> paramsData = FXCollections.observableArrayList();
+    /** Params 文本模式编辑区 */
+    private TextArea paramsTextArea;
+    /** Params 是否处于文本模式 */
+    private boolean paramsTextMode = false;
 
     // Headers 标签页
     private TableView<KeyValueRow> headersTable;
@@ -127,6 +134,14 @@ public class RequestBuilderView implements RequestSelectionListener {
     /** 自动生成的头(只读)展示区域 */
     private VBox autoHeadersBox;
     private boolean showAutoHeaders = true;
+    /** Headers 文本模式编辑区 */
+    private TextArea headersTextArea;
+    /** Headers 是否处于文本模式 */
+    private boolean headersTextMode = false;
+    /** 包含 Cookies 复选框 (默认勾选, 控制发送时是否自动附带当前集合存储中的 Cookie) */
+    private CheckBox includeCookiesCheckBox;
+    /** Cookie 预览标签 (位于 Headers 表格下方, 展示将随请求发送的 Cookie) */
+    private Label cookiePreviewLabel;
     /**
      * 被用户在 autoHeadersBox 中取消勾选的自动头 key(小写)。
      * <p>
@@ -181,7 +196,8 @@ public class RequestBuilderView implements RequestSelectionListener {
                               CollectionService collectionService,
                               HistoryService historyService,
                               EnvironmentService environmentService,
-                              DefaultHeaderProvider defaultHeaderProvider) {
+                              DefaultHeaderProvider defaultHeaderProvider,
+                              CookieService cookieService) {
         this.httpEngine = httpEngine;
         this.variableResolver = variableResolver;
         this.inheritanceMerger = inheritanceMerger;
@@ -189,6 +205,7 @@ public class RequestBuilderView implements RequestSelectionListener {
         this.historyService = historyService;
         this.environmentService = environmentService;
         this.defaultHeaderProvider = defaultHeaderProvider;
+        this.cookieService = cookieService;
         buildView();
     }
 
@@ -278,6 +295,8 @@ public class RequestBuilderView implements RequestSelectionListener {
         urlField.focusedProperty().addListener((obs, old, focused) -> {
             if (!focused) syncUrlToParams();
         });
+        // URL 文本变化时刷新 Cookie 预览 (覆盖用户输入与程序化 setText, 如加载请求/历史)
+        urlField.textProperty().addListener((obs, old, newVal) -> updateCookiePreview(newVal));
         // Task 1: URL 输入框变量自动补全
         setupVariableCompletion(urlField);
 
@@ -318,7 +337,18 @@ public class RequestBuilderView implements RequestSelectionListener {
         Button removeBtn = new Button("- 删除选中");
         removeBtn.setOnAction(e -> paramsData.removeAll(paramsTable.getSelectionModel().getSelectedItems()));
 
-        container.getChildren().addAll(createToolbar(addBtn, removeBtn), paramsTable);
+        // 文本模式切换按钮
+        Button textToggleBtn = new Button("切换为文本模式");
+        textToggleBtn.setOnAction(e -> toggleParamsMode(addBtn, removeBtn, textToggleBtn));
+
+        // 文本模式编辑区(初始隐藏)
+        paramsTextArea = createTextModeArea("每行一个参数, 格式: key: value\n以 # 开头表示禁用该行\n支持中英文冒号");
+
+        // StackPane 容纳表格和文本区, 通过 visible/managed 切换
+        StackPane stackPane = new StackPane(paramsTable, paramsTextArea);
+        VBox.setVgrow(stackPane, Priority.ALWAYS);
+
+        container.getChildren().addAll(createToolbar(addBtn, removeBtn, textToggleBtn), stackPane);
         return container;
     }
 
@@ -347,6 +377,19 @@ public class RequestBuilderView implements RequestSelectionListener {
             autoHeadersBox.setManaged(n);
         });
 
+        // 包含 Cookies 复选框 (默认勾选, 控制发送时是否自动附带 Cookie)
+        includeCookiesCheckBox = new CheckBox("包含 Cookies");
+        includeCookiesCheckBox.setSelected(true);
+        includeCookiesCheckBox.setTooltip(new Tooltip(
+                "勾选时自动附带当前集合存储中匹配域名/路径的 Cookie; 取消则不自动附带 Cookie"));
+
+        // 文本模式切换按钮
+        Button textToggleBtn = new Button("切换为文本模式");
+        textToggleBtn.setOnAction(e -> toggleHeadersMode(addBtn, removeBtn, textToggleBtn));
+
+        // 文本模式编辑区(初始隐藏)
+        headersTextArea = createTextModeArea("每行一个请求头, 格式: key: value\n以 # 开头表示禁用该行\n支持中英文冒号");
+
         // Fix 3: 自动生成头只读区域(位于表格上方)
         autoHeadersBox = new VBox(2);
         autoHeadersBox.setPadding(new Insets(6));
@@ -354,11 +397,310 @@ public class RequestBuilderView implements RequestSelectionListener {
         autoHeadersBox.setVisible(showAutoHeaders);
         autoHeadersBox.setManaged(showAutoHeaders);
 
+        // StackPane 容纳表格和文本区, 通过 visible/managed 切换
+        StackPane stackPane = new StackPane(headersTable, headersTextArea);
+        VBox.setVgrow(stackPane, Priority.ALWAYS);
+
+        // Cookie 预览标签 (位于 Headers 表格下方, 灰色小字)
+        cookiePreviewLabel = new Label("Cookies: 无");
+        cookiePreviewLabel.setStyle("-fx-text-fill: gray; -fx-font-size: 11px;");
+        cookiePreviewLabel.setTooltip(new Tooltip("将随该请求自动发送的 Cookie (按域名/路径匹配当前集合存储)"));
+
         container.getChildren().addAll(
-                createToolbar(addBtn, removeBtn, showAutoBtn),
+                createToolbar(addBtn, removeBtn, textToggleBtn, showAutoBtn, includeCookiesCheckBox),
                 autoHeadersBox,
-                headersTable);
+                stackPane,
+                cookiePreviewLabel);
         return container;
+    }
+
+    // ==================== Cookie 预览 ====================
+
+    /**
+     * 根据当前 URL 刷新 Cookie 预览标签。
+     * <p>
+     * 调用 {@link CookieService#getCookiesForUrl(String)} 获取匹配域名/路径的 Cookie,
+     * 展示格式: "Cookies: N 个 (k1=v1; k2=v2)" 或 "Cookies: 无" (无匹配时)。
+     * 超过 80 字符时截断并以 "..." 结尾。在 URL 变化、加载请求、请求响应完成后调用。
+     *
+     * @param url 当前请求 URL (可为 null 或空)
+     */
+    public void updateCookiePreview(String url) {
+        String cookieValue = null;
+        try {
+            if (cookieService != null && url != null && !url.isBlank()) {
+                cookieValue = cookieService.getCookiesForUrl(url);
+            }
+        } catch (Exception e) {
+            log.warn("刷新 Cookie 预览失败", e);
+            cookieValue = null;
+        }
+        final String text;
+        if (cookieValue == null || cookieValue.isEmpty()) {
+            text = "Cookies: 无";
+        } else {
+            int count = cookieValue.split("; ").length;
+            String full = "Cookies: " + count + " 个 (" + cookieValue + ")";
+            if (full.length() > 80) {
+                full = full.substring(0, 77) + "...";
+            }
+            text = full;
+        }
+        if (cookiePreviewLabel != null) {
+            cookiePreviewLabel.setText(text);
+        }
+    }
+
+    // ==================== 文本模式 (表格 ↔ 文本切换) ====================
+
+    /**
+     * 创建文本模式编辑区 TextArea(初始隐藏,等宽字体)。
+     *
+     * @param prompt 空数据提示文本
+     */
+    private TextArea createTextModeArea(String prompt) {
+        TextArea area = new TextArea();
+        area.setPromptText(prompt);
+        area.setWrapText(true);
+        area.setPrefRowCount(15);
+        area.setStyle("-fx-font-family: monospace;");
+        area.setVisible(false);
+        area.setManaged(false);
+        return area;
+    }
+
+    /**
+     * 切换 Params 表格/文本模式。
+     * 表格 → 文本: 将表格数据转为文本格式写入 TextArea;
+     * 文本 → 表格: 解析文本回填到底层数据源(触发 URL 同步)。
+     */
+    private void toggleParamsMode(Button addBtn, Button removeBtn, Button toggleBtn) {
+        if (!paramsTextMode) {
+            // 表格 → 文本
+            paramsTextArea.setText(convertTableToText(paramsTable));
+            paramsTextMode = true;
+            showTextArea(paramsTable, paramsTextArea);
+            toggleBtn.setText("切换为表格模式");
+            addBtn.setDisable(true);
+            removeBtn.setDisable(true);
+        } else {
+            // 文本 → 表格(解析文本回填数据源, ListChangeListener 会触发 syncParamsToUrl)
+            parseTextToTable(paramsTextArea.getText(), paramsTable);
+            paramsTextMode = false;
+            showTable(paramsTable, paramsTextArea);
+            toggleBtn.setText("切换为文本模式");
+            addBtn.setDisable(false);
+            removeBtn.setDisable(false);
+        }
+    }
+
+    /**
+     * 切换 Headers 表格/文本模式。
+     * 表格 → 文本: 将表格数据转为文本格式写入 TextArea;
+     * 文本 → 表格: 解析文本回填到底层数据源。
+     */
+    private void toggleHeadersMode(Button addBtn, Button removeBtn, Button toggleBtn) {
+        if (!headersTextMode) {
+            // 表格 → 文本
+            headersTextArea.setText(convertTableToText(headersTable));
+            headersTextMode = true;
+            showTextArea(headersTable, headersTextArea);
+            toggleBtn.setText("切换为表格模式");
+            addBtn.setDisable(true);
+            removeBtn.setDisable(true);
+        } else {
+            // 文本 → 表格
+            parseTextToTable(headersTextArea.getText(), headersTable);
+            headersTextMode = false;
+            showTable(headersTable, headersTextArea);
+            toggleBtn.setText("切换为文本模式");
+            addBtn.setDisable(false);
+            removeBtn.setDisable(false);
+        }
+    }
+
+    /** 显示 TextArea、隐藏 TableView */
+    private void showTextArea(TableView<?> table, TextArea textArea) {
+        textArea.setVisible(true);
+        textArea.setManaged(true);
+        table.setVisible(false);
+        table.setManaged(false);
+    }
+
+    /** 显示 TableView、隐藏 TextArea */
+    private void showTable(TableView<?> table, TextArea textArea) {
+        table.setVisible(true);
+        table.setManaged(true);
+        textArea.setVisible(false);
+        textArea.setManaged(false);
+    }
+
+    /**
+     * 将表格数据转为文本格式。
+     * <p>
+     * 每行 "key: value", disabled 行以 {@code #} 开头。
+     * 读取底层数据源(非排序视图),保持原始数据顺序。
+     *
+     * @param table 目标表格
+     * @return 文本格式字符串
+     */
+    private String convertTableToText(TableView<KeyValueRow> table) {
+        return convertRowsToText(getUnderlyingData(table));
+    }
+
+    /**
+     * 将 KeyValueRow 列表转为文本格式。
+     * <p>
+     * 每行 "key: value", disabled 行以 {@code #} 开头。
+     *
+     * @param rows 行数据列表
+     * @return 文本格式字符串
+     */
+    private String convertRowsToText(List<KeyValueRow> rows) {
+        StringBuilder sb = new StringBuilder();
+        for (KeyValueRow row : rows) {
+            String key = row.getKey();
+            String value = row.getValue();
+            if (key == null || key.trim().isEmpty()) {
+                continue;
+            }
+            if (!row.isEnabled()) {
+                sb.append("# ");
+            }
+            sb.append(key.trim());
+            sb.append(": ");
+            sb.append(value != null ? value : "");
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 从文本解析为表格数据(替换底层 ObservableList 内容)。
+     * <p>
+     * 支持中英文冒号 ({@code :} 或 {@code ：}), 去掉 key/value 前后空格。
+     * 以 {@code #} 开头的行视为 disabled。
+     *
+     * @param text  文本内容
+     * @param table 目标表格
+     */
+    private void parseTextToTable(String text, TableView<KeyValueRow> table) {
+        ObservableList<KeyValueRow> data = getUnderlyingData(table);
+        List<KeyValueRow> rows = parseTextToRows(text);
+        data.setAll(rows);
+    }
+
+    /**
+     * 从文本解析为 KeyValueRow 列表。
+     * <p>
+     * 支持中英文冒号 ({@code :} 或 {@code ：}), 去掉 key/value 前后空格。
+     * 以 {@code #} 开头的行视为 disabled,空行跳过。
+     *
+     * @param text 文本内容
+     * @return 解析后的行列表
+     */
+    private List<KeyValueRow> parseTextToRows(String text) {
+        List<KeyValueRow> result = new ArrayList<>();
+        if (text == null || text.trim().isEmpty()) {
+            return result;
+        }
+        String[] lines = text.split("\n");
+        for (String line : lines) {
+            if (line == null || line.trim().isEmpty()) {
+                continue;
+            }
+            String trimmed = line.trim();
+
+            // 注释/禁用行
+            boolean disabled = false;
+            if (trimmed.startsWith("#")) {
+                disabled = true;
+                trimmed = trimmed.substring(1).trim();
+            }
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+
+            // 查找第一个冒号(英文或中文)
+            int colonIdx = -1;
+            for (int i = 0; i < trimmed.length(); i++) {
+                char c = trimmed.charAt(i);
+                if (c == ':' || c == '：') {
+                    colonIdx = i;
+                    break;
+                }
+            }
+
+            String key;
+            String value;
+            if (colonIdx >= 0) {
+                key = trimmed.substring(0, colonIdx).trim();
+                value = trimmed.substring(colonIdx + 1).trim();
+            } else {
+                // 没有冒号, 整行作为 key, value 为空
+                key = trimmed;
+                value = "";
+            }
+
+            if (!key.isEmpty()) {
+                result.add(new KeyValueRow(key, value, !disabled, ""));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 获取 TableView 底层的可修改数据源。
+     * <p>
+     * TableView 的 items 可能被 SortedList / FilteredList 包裹,
+     * 此方法逐层解包直到拿到原始 ObservableList(如 paramsData / headersData)。
+     *
+     * @param table 目标表格
+     * @return 底层可修改的 ObservableList
+     */
+    @SuppressWarnings("unchecked")
+    private ObservableList<KeyValueRow> getUnderlyingData(TableView<KeyValueRow> table) {
+        ObservableList<KeyValueRow> items = table.getItems();
+        while (items instanceof TransformationList<?, ?> tl) {
+            items = (ObservableList<KeyValueRow>) tl.getSource();
+        }
+        return items;
+    }
+
+    /**
+     * 文本模式下,将 TextArea 内容同步回底层数据源。
+     * <p>
+     * 在 {@link #collectConfig()} 等读取数据前调用,确保文本编辑的内容
+     * 已写回 paramsData / headersData(并触发 URL 同步)。
+     */
+    private void syncTextToDataIfNeeded() {
+        if (paramsTextMode && paramsTextArea != null) {
+            List<KeyValueRow> rows = parseTextToRows(paramsTextArea.getText());
+            paramsData.setAll(rows);
+        }
+        if (headersTextMode && headersTextArea != null) {
+            List<KeyValueRow> rows = parseTextToRows(headersTextArea.getText());
+            headersData.setAll(rows);
+        }
+    }
+
+    /**
+     * 表格数据变化后,若处于文本模式则同步更新 TextArea 内容。
+     * <p>
+     * 用于 {@link #syncUrlToParams()} 和 {@link #loadConfigToUI(RequestConfig)} 等场景:
+     * 底层数据被程序化修改后,文本区需同步显示。
+     */
+    private void syncParamsDataToTextArea() {
+        if (paramsTextMode && paramsTextArea != null) {
+            paramsTextArea.setText(convertRowsToText(paramsData));
+        }
+    }
+
+    /** Headers 版本: 底层数据变化后同步文本区 */
+    private void syncHeadersDataToTextArea() {
+        if (headersTextMode && headersTextArea != null) {
+            headersTextArea.setText(convertRowsToText(headersData));
+        }
     }
 
     /**
@@ -727,6 +1069,8 @@ public class RequestBuilderView implements RequestSelectionListener {
         } finally {
             syncingUrlParams = false;
         }
+        // 文本模式下同步到文本区(URL 变更导致 paramsData 变化后需更新文本)
+        syncParamsDataToTextArea();
     }
 
     /** 根据启用的 Params 行反向构建 URL 查询字符串 */
@@ -808,6 +1152,8 @@ public class RequestBuilderView implements RequestSelectionListener {
         } finally {
             syncingUrlParams = false;
         }
+        // 文本模式下同步到文本区
+        syncParamsDataToTextArea();
 
         // Headers(只加载用户头;disabled 且 key 命中自动头的行还原为 autoHeadersBox 取消勾选状态)
         headersData.clear();
@@ -826,6 +1172,8 @@ public class RequestBuilderView implements RequestSelectionListener {
                 headersData.add(new KeyValueRow(key, h.getValue(), h.isEnabled(), h.getDescription()));
             }
         }
+        // 文本模式下同步到文本区
+        syncHeadersDataToTextArea();
 
         // Body
         RequestBody body = config.getBody();
@@ -882,6 +1230,8 @@ public class RequestBuilderView implements RequestSelectionListener {
 
         updateAutoHeaders();
         updateStatus("已加载请求: " + (currentRequest != null ? currentRequest.getName() : ""));
+        // 加载请求后刷新 Cookie 预览 (覆盖切换集合但 URL 未变的情况: Cookie 上下文已变)
+        updateCookiePreview(config.getUrl());
     }
 
     /** 获取当前 UI 上的请求配置(供性能测试等模块使用) */
@@ -891,6 +1241,9 @@ public class RequestBuilderView implements RequestSelectionListener {
 
     /** 从 UI 收集 RequestConfig */
     private RequestConfig collectConfig() {
+        // 文本模式下,先将 TextArea 内容同步回底层数据源(确保 URL 等同步)
+        syncTextToDataIfNeeded();
+
         RequestConfig config = new RequestConfig();
         config.setMethod(methodCombo.getValue());
         config.setUrl(urlField.getText());
@@ -968,6 +1321,9 @@ public class RequestBuilderView implements RequestSelectionListener {
 
         // Auth
         config.setAuth(collectAuth());
+
+        // 包含 Cookies (是否自动附带 Cookie)
+        config.setIncludeCookies(includeCookiesCheckBox != null && includeCookiesCheckBox.isSelected());
 
         return config;
     }
@@ -1049,6 +1405,8 @@ public class RequestBuilderView implements RequestSelectionListener {
                                 response.getStatusCode(),
                                 response.getStatusText() != null ? response.getStatusText() : "",
                                 response.getTiming() != null ? response.getTiming().getTotalMs() : 0));
+                        // 响应可能更新了 Cookie (Set-Cookie), 用解析变量后的 URL 刷新 Cookie 预览
+                        updateCookiePreview(config.getUrl());
                     });
                 })
                 .exceptionally(throwable -> {

@@ -299,14 +299,17 @@ public class HttpEngineService {
             builder.header(header.getKey(), header.getValue());
         }
 
-        // 5. Cookie 自动管理(用户未手动设置 Cookie 时附带当前集合匹配的 cookie)
-        boolean userHasCookie = config.getHeaders().stream()
-                .anyMatch(h -> h.isEnabled() && h.getKey() != null
-                        && "cookie".equalsIgnoreCase(h.getKey()));
-        if (!userHasCookie) {
-            String cookieValue = cookieService.getCookiesForUrl(config.getUrl());
-            if (cookieValue != null && !cookieValue.isEmpty()) {
-                builder.header("Cookie", cookieValue);
+        // 5. Cookie 自动管理(用户未手动设置 Cookie 且未禁用 Cookie 时,附带当前集合匹配的 cookie)
+        if (config.isIncludeCookies()) {
+            boolean userHasCookie = config.getHeaders().stream()
+                    .anyMatch(h -> h.isEnabled() && h.getKey() != null
+                            && "cookie".equalsIgnoreCase(h.getKey()));
+            if (!userHasCookie) {
+                String cookieValue = cookieService.getCookiesForUrl(config.getUrl());
+                if (cookieValue != null && !cookieValue.isEmpty()) {
+                    builder.header("Cookie", cookieValue);
+                    log.debug("自动附加 Cookie: {}", cookieValue);
+                }
             }
         }
 

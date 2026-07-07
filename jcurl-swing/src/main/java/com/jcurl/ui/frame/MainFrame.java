@@ -355,6 +355,22 @@ public class MainFrame extends JFrame {
             }
         });
 
+        // URL 文本变化时刷新 Cookie 预览 (覆盖用户输入与程序化 setText, 如加载请求/历史/cURL 导入)
+        urlField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                requestPanel.updateCookiePreview(urlField.getText());
+            }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                requestPanel.updateCookiePreview(urlField.getText());
+            }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                requestPanel.updateCookiePreview(urlField.getText());
+            }
+        });
+
         // 请求面板修改 URL 时回填到工具栏 URL 输入框
         requestPanel.setUrlUpdater(url -> {
             if (url != null && !url.equals(urlField.getText())) {
@@ -391,6 +407,8 @@ public class MainFrame extends JFrame {
             // Cookie 跟随项目 (集合) 走: 切换集合即切换 Cookie 上下文
             cookieService.setCurrentCollection(currentCollectionId);
             updateCookieStatus();
+            // 切换 Cookie 上下文后刷新预览 (URL 可能未变但匹配的 Cookie 已变)
+            requestPanel.updateCookiePreview(urlField.getText());
         });
 
         // 选中请求节点时加载到 RequestPanel
@@ -469,6 +487,8 @@ public class MainFrame extends JFrame {
                     // 刷新历史与 Cookie 状态
                     sidebarPanel.refreshHistory();
                     updateCookieStatus();
+                    // 响应可能更新了 Cookie (Set-Cookie), 刷新 Cookie 预览
+                    requestPanel.updateCookiePreview(urlField.getText());
                 } catch (Exception e) {
                     responsePanel.showError("请求执行异常: " + e.getMessage());
                     statusLabel.setText("请求异常: " + e.getMessage());
@@ -584,9 +604,14 @@ public class MainFrame extends JFrame {
 
     private void openCookieDialog() {
         // 树形 + 表格的 Cookie 增删改查对话框 (Cookie 跟随当前集合上下文)
-        CookieManagerDialog dialog = new CookieManagerDialog(this, cookieService, this::updateCookieStatus);
+        CookieManagerDialog dialog = new CookieManagerDialog(this, cookieService, () -> {
+            updateCookieStatus();
+            requestPanel.updateCookiePreview(urlField.getText());
+        });
         dialog.setVisible(true);
         updateCookieStatus();
+        // 手动增删 Cookie 后刷新预览
+        requestPanel.updateCookiePreview(urlField.getText());
     }
 
     // ==================== 历史 ====================

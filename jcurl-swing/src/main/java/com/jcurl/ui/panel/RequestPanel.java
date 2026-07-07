@@ -5,6 +5,7 @@ import com.jcurl.model.AuthConfig;
 import com.jcurl.model.KeyValue;
 import com.jcurl.model.RequestNode;
 import com.jcurl.model.dto.RequestConfig;
+import com.jcurl.service.CookieService;
 import com.jcurl.service.DefaultHeaderProvider;
 import com.jcurl.service.VariableResolver;
 import net.miginfocom.swing.MigLayout;
@@ -87,9 +88,13 @@ public class RequestPanel extends JPanel {
     private final transient ObjectMapper objectMapper;
     /** 默认请求头提供者 (核心层), 计算并刷新界面展示的自动默认头 */
     private final transient DefaultHeaderProvider defaultHeaderProvider;
+    /** Cookie 管理服务 (用于预览将随请求发送的 Cookie) */
+    private final transient CookieService cookieService;
 
     private final KeyValueTablePanel paramsPanel;
     private final KeyValueTablePanel headersPanel;
+    /** Cookie 预览标签 (位于 Headers 表格下方, 展示将随请求发送的 Cookie) */
+    private JLabel cookiePreviewLabel;
 
     // Body — CardLayout
     private CardLayout bodyCardLayout;
@@ -116,6 +121,8 @@ public class RequestPanel extends JPanel {
 
     /** 自动重定向复选框 (默认勾选, 可取消以查看 301/302 原始响应) */
     private javax.swing.JCheckBox followRedirectsCheckBox;
+    /** 包含 Cookies 复选框 (默认勾选, 控制是否自动附带当前集合存储中的 Cookie) */
+    private javax.swing.JCheckBox includeCookiesCheckBox;
     private JPanel authCardPanel;
 
     // Auth 字段
@@ -135,10 +142,11 @@ public class RequestPanel extends JPanel {
     private boolean syncing = false;
 
     public RequestPanel(VariableResolver variableResolver, ObjectMapper objectMapper,
-                        DefaultHeaderProvider defaultHeaderProvider) {
+                        DefaultHeaderProvider defaultHeaderProvider, CookieService cookieService) {
         this.variableResolver = variableResolver;
         this.objectMapper = objectMapper;
         this.defaultHeaderProvider = defaultHeaderProvider;
+        this.cookieService = cookieService;
 
         setLayout(new BorderLayout());
 
@@ -156,7 +164,7 @@ public class RequestPanel extends JPanel {
 
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Params", paramsPanel);
-        tabbedPane.addTab("Headers", headersPanel);
+        tabbedPane.addTab("Headers", createHeadersPanel());
         tabbedPane.addTab("Body", createBodyPanel());
         tabbedPane.addTab("Auth", createAuthPanel());
 
@@ -349,6 +357,76 @@ public class RequestPanel extends JPanel {
         } catch (Exception e) {
             return s;
         }
+    }
+
+    // ==================== Headers 面板 ====================
+
+    /**
+     * 构建 Headers 标签页面板: 顶部放置 "包含 Cookies" 复选框, 中间为 Headers 键值表。
+     * 复选框默认勾选, 控制发送请求时是否自动附带当前集合存储中匹配的 Cookie。
+     */
+    private JPanel createHeadersPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        // 顶部工具条: "包含 Cookies" 复选框 (默认勾选)
+        JPanel topBar = new JPanel(new MigLayout("insets 2 4 2 4", "[]push", ""));
+        includeCookiesCheckBox = new javax.swing.JCheckBox("包含 Cookies", true);
+        includeCookiesCheckBox.setToolTipText(
+                "勾选时自动附带当前集合存储中匹配域名/路径的 Cookie; 取消则不自动附带 Cookie");
+        topBar.add(includeCookiesCheckBox, "");
+        panel.add(topBar, BorderLayout.NORTH);
+
+        // 中间: Headers 键值表面板 (KeyValueTablePanel, 含自身的添加/删除/模式切换工具条)
+        panel.add(headersPanel, BorderLayout.CENTER);
+
+        // 底部: Cookie 预览标签 (展示将随请求发送的 Cookie, 灰色小字)
+        cookiePreviewLabel = new JLabel("Cookies: 无");
+        cookiePreviewLabel.setForeground(java.awt.Color.GRAY);
+        cookiePreviewLabel.setFont(cookiePreviewLabel.getFont().deriveFont(java.awt.Font.PLAIN, 11f));
+        cookiePreviewLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 4));
+        cookiePreviewLabel.setToolTipText("将随该请求自动发送的 Cookie (按域名/路径匹配当前集合存储)");
+        panel.add(cookiePreviewLabel, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    // ==================== Cookie 预览 ====================
+
+    /**
+     * 根据当前 URL 刷新 Cookie 预览标签。
+     * <p>
+     * 调用 {@link CookieService#getCookiesForUrl(String)} 获取匹配域名/路径的 Cookie,
+     * 展示格式: "Cookies: N 个 (k1=v1; k2=v2)" 或 "Cookies: 无" (无匹配时)。
+     * 超过 80 字符时截断并以 "..." 结尾。由 MainFrame 在 URL 变化、切换集合、
+     * 请求响应完成后调用。
+     *
+     * @param url 当前请求 URL (可为 null 或空)
+     */
+    public void updateCookiePreview(String url) {
+        String cookieValue = null;
+        try {
+            if (cookieService != null && url != null && !url.trim().isEmpty()) {
+                cookieValue = cookieService.getCookiesForUrl(url);
+            }
+        } catch (Exception e) {
+            cookieValue = null;
+        }
+        final String text;
+        if (cookieValue == null || cookieValue.isEmpty()) {
+            text = "Cookies: 无";
+        } else {
+            int count = cookieValue.split("; ").length;
+            String full = "Cookies: " + count + " 个 (" + cookieValue + ")";
+            if (full.length() > 80) {
+                full = full.substring(0, 77) + "...";
+            }
+            text = full;
+        }
+        SwingUtilities.invokeLater(() -> {
+            if (cookiePreviewLabel != null) {
+                cookiePreviewLabel.setText(text);
+            }
+        });
     }
 
     // ==================== Body 面板 ====================
@@ -743,6 +821,9 @@ public class RequestPanel extends JPanel {
 
         // 自动重定向
         config.setFollowRedirects(followRedirectsCheckBox != null && followRedirectsCheckBox.isSelected());
+
+        // 包含 Cookies (是否自动附带 Cookie)
+        config.setIncludeCookies(includeCookiesCheckBox != null && includeCookiesCheckBox.isSelected());
 
         return config;
     }

@@ -444,10 +444,13 @@ public class HttpEngineService {
             }
         }
 
-        // 5. 自动添加 Cookie (用户未手动设置 Cookie 头时)
-        String cookies = cookieService.getCookiesForUrl(url);
-        if (cookies != null && !cookies.isEmpty() && !existingHeaderKeys.contains("cookie")) {
-            requestBuilder.addHeader("Cookie", cookies);
+        // 5. 自动添加 Cookie (用户未手动设置 Cookie 头且未禁用 Cookie 时)
+        if (config.isIncludeCookies()) {
+            String cookies = cookieService.getCookiesForUrl(url);
+            if (cookies != null && !cookies.isEmpty() && !existingHeaderKeys.contains("cookie")) {
+                requestBuilder.addHeader("Cookie", cookies);
+                log.debug("自动附加 Cookie: {}", cookies);
+            }
         }
 
         // 6. 构建 body 并设置 method (GET/HEAD 带 body 时通过反射绕过 OkHttp 限制)

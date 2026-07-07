@@ -22,6 +22,8 @@ public class RequestConfig {
     private List<Header> headers = new ArrayList<>();
     private RequestBody body = new RequestBody("none");
     private AuthConfig auth = AuthConfig.none();
+    /** 是否自动附带 Cookie (从当前集合存储中匹配域名/路径), 默认 true */
+    private boolean includeCookies = true;
 
     public RequestConfig() {}
 
@@ -54,4 +56,7 @@ public class RequestConfig {
         return auth;
     }
     public void setAuth(AuthConfig auth) { this.auth = auth; }
+
+    public boolean isIncludeCookies() { return includeCookies; }
+    public void setIncludeCookies(boolean includeCookies) { this.includeCookies = includeCookies; }
 }
