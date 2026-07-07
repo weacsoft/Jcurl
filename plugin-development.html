@@ -103,7 +103,7 @@ th{background:var(--card);color:var(--accent)}
 <h2>1. Introduction: The Plugin System</h2>
 <p>Jcurl ships with a lightweight plugin system that lets you extend the application without modifying its source. A plugin is a single <code>.java</code> source file annotated with <code>@JcurlPlugin</code> that implements one or more <strong>extension point</strong> interfaces. Plugins are compiled at runtime by an in-memory Java compiler (<code>JavaSourceCompiler</code>) — no pre-compilation, build steps, or JAR packaging are required.</p>
 
-<p>All extension points live in the package <code>com.jcurl2.plugin.extension</code> and extend the marker interface <code>com.jcurl2.plugin.ExtensionPoint</code>. When a plugin is loaded, the <code>PluginManager</code> discovers every implemented extension point and registers it in the <code>ExtensionRegistry</code>, where the host application calls them at the appropriate moment.</p>
+<p>All extension points live in the package <code>com.jcurl.plugin.extension</code> and extend the marker interface <code>com.jcurl.plugin.ExtensionPoint</code>. When a plugin is loaded, the <code>PluginManager</code> discovers every implemented extension point and registers it in the <code>ExtensionRegistry</code>, where the host application calls them at the appropriate moment.</p>
 
 <p>There are <strong>four extension points</strong>:</p>
 <table>
@@ -119,7 +119,7 @@ A single plugin class may implement <strong>any combination</strong> of these in
 </div>
 
 <p>Package overview of the plugin API:</p>
-<pre><code class="language-text">com.jcurl2.plugin
+<pre><code class="language-text">com.jcurl.plugin
   ├── JcurlPlugin            (annotation)
   ├── ExtensionPoint         (marker interface)
   ├── PluginContext          (host services)
@@ -129,7 +129,7 @@ A single plugin class may implement <strong>any combination</strong> of these in
        ├── VariableFunctionExtension
        └── MetricsCollectorExtension
 
-com.jcurl2.model
+com.jcurl.model
   ├── dto
   │    ├── RequestConfig
   │    ├── ResponseData
@@ -143,7 +143,7 @@ com.jcurl2.model
 
 <section id="annotation">
 <h2>2. The @JcurlPlugin Annotation</h2>
-<p>Every plugin's main class must be annotated with <code>@JcurlPlugin</code> (package <code>com.jcurl2.plugin</code>). The annotation provides metadata shown in the Plugin Manager UI and is retained at runtime (<code>@Retention(RUNTIME)</code>, <code>@Target(TYPE)</code>).</p>
+<p>Every plugin's main class must be annotated with <code>@JcurlPlugin</code> (package <code>com.jcurl.plugin</code>). The annotation provides metadata shown in the Plugin Manager UI and is retained at runtime (<code>@Retention(RUNTIME)</code>, <code>@Target(TYPE)</code>).</p>
 
 <div class="sig">@Retention(RetentionPolicy.RUNTIME)<br>@Target(ElementType.TYPE)<br>public @interface JcurlPlugin</div>
 
@@ -157,11 +157,11 @@ com.jcurl2.model
 </table>
 
 <h4>Minimal example</h4>
-<pre><code class="language-java">import com.jcurl2.model.component.Header;
-import com.jcurl2.model.dto.RequestConfig;
-import com.jcurl2.plugin.JcurlPlugin;
-import com.jcurl2.plugin.PluginContext;
-import com.jcurl2.plugin.extension.RequestInterceptor;
+<pre><code class="language-java">import com.jcurl.plugin.model.component.Header;
+import com.jcurl.plugin.model.dto.RequestConfig;
+import com.jcurl.plugin.JcurlPlugin;
+import com.jcurl.plugin.PluginContext;
+import com.jcurl.plugin.extension.RequestInterceptor;
 
 @JcurlPlugin(
         name = "Sign Plugin",
@@ -180,7 +180,7 @@ public class SignPlugin implements RequestInterceptor {
 
 <section id="context">
 <h2>3. PluginContext Interface</h2>
-<p>The <code>PluginContext</code> interface (package <code>com.jcurl2.plugin</code>) is the plugin's window into the host application. It is the minimal shared contract implemented by <strong>all</strong> versions (core/JavaFX/Swing), so code written against it works everywhere. The core version additionally exposes <code>CorePluginContext</code>, which extends <code>PluginContext</code> with extra services.</p>
+<p>The <code>PluginContext</code> interface (package <code>com.jcurl.plugin</code>) is the plugin's window into the host application. It is the minimal shared contract implemented by <strong>all</strong> versions (core/JavaFX/Swing), so code written against it works everywhere. The core version additionally exposes <code>CorePluginContext</code>, which extends <code>PluginContext</code> with extra services.</p>
 
 <div class="sig">public interface PluginContext</div>
 
@@ -228,7 +228,7 @@ Use <code>getPluginDataDir()</code> to persist per-plugin state (caches, tokens,
 </table>
 
 <h4>RequestConfig model</h4>
-<p>Class <code>com.jcurl2.model.dto.RequestConfig</code> is the transient, ready-to-execute request configuration (distinct from the persisted <code>RequestNode</code>). Its mutable fields are accessed via getters/setters:</p>
+<p>Class <code>com.jcurl.plugin.model.dto.RequestConfig</code> is the transient, ready-to-execute request configuration (distinct from the persisted <code>RequestNode</code>). Its mutable fields are accessed via getters/setters:</p>
 <table>
 <tr><th>Field</th><th>Type</th><th>Getter</th></tr>
 <tr><td>method</td><td>String</td><td><code>getMethod()</code> (default <code>"GET"</code>)</td></tr>
@@ -240,7 +240,7 @@ Use <code>getPluginDataDir()</code> to persist per-plugin state (caches, tokens,
 </table>
 
 <h4>Header model</h4>
-<p>Class <code>com.jcurl2.model.component.Header</code> — a key/value pair with an <code>enabled</code> flag and optional <code>description</code>.</p>
+<p>Class <code>com.jcurl.plugin.model.component.Header</code> — a key/value pair with an <code>enabled</code> flag and optional <code>description</code>.</p>
 <pre><code class="language-java">new Header(String key, String value)                 // enabled = true
 new Header(String key, String value, boolean enabled)
 // getters: getKey(), getValue(), isEnabled(), getDescription()</code></pre>
@@ -282,7 +282,7 @@ public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
 </table>
 
 <h4>ResponseData model</h4>
-<p>Class <code>com.jcurl2.model.dto.ResponseData</code> holds the complete response. Key accessors:</p>
+<p>Class <code>com.jcurl.plugin.model.dto.ResponseData</code> holds the complete response. Key accessors:</p>
 <table>
 <tr><th>Field</th><th>Type</th><th>Getter</th></tr>
 <tr><td>statusCode</td><td>int</td><td><code>getStatusCode()</code> (e.g. 200)</td></tr>
@@ -408,16 +408,16 @@ public Map&lt;String, Double&gt; collectMetrics(RequestConfig config, ResponseDa
 <section id="example">
 <h2>8. Complete Working Example (DemoPlugin.java)</h2>
 <p>The following plugin implements <strong>all four</strong> extension points at once. Drop it into <code>./.api-client/plugins/</code> and it will be compiled and loaded on the next plugin scan.</p>
-<pre><code class="language-java">import com.jcurl2.model.component.Header;
-import com.jcurl2.model.dto.RequestConfig;
-import com.jcurl2.model.dto.ResponseData;
-import com.jcurl2.plugin.ExtensionPoint;
-import com.jcurl2.plugin.JcurlPlugin;
-import com.jcurl2.plugin.PluginContext;
-import com.jcurl2.plugin.extension.MetricsCollectorExtension;
-import com.jcurl2.plugin.extension.RequestInterceptor;
-import com.jcurl2.plugin.extension.ResponseInterceptor;
-import com.jcurl2.plugin.extension.VariableFunctionExtension;
+<pre><code class="language-java">import com.jcurl.plugin.model.component.Header;
+import com.jcurl.plugin.model.dto.RequestConfig;
+import com.jcurl.plugin.model.dto.ResponseData;
+import com.jcurl.plugin.ExtensionPoint;
+import com.jcurl.plugin.JcurlPlugin;
+import com.jcurl.plugin.PluginContext;
+import com.jcurl.plugin.extension.MetricsCollectorExtension;
+import com.jcurl.plugin.extension.RequestInterceptor;
+import com.jcurl.plugin.extension.ResponseInterceptor;
+import com.jcurl.plugin.extension.VariableFunctionExtension;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -638,7 +638,7 @@ Write plugins against the <code>PluginContext</code> interface, not a specific i
 <h2>1. 插件系统简介</h2>
 <p>Jcurl 内置一套轻量级插件系统，无需修改源码即可扩展应用功能。一个插件就是一个用 <code>@JcurlPlugin</code> 标注、并实现一个或多个<strong>扩展点</strong>接口的 <code>.java</code> 源文件。插件由内置内存编译器 (<code>JavaSourceCompiler</code>) 在运行时编译——无需预编译、构建步骤或打包 JAR。</p>
 
-<p>所有扩展点都位于包 <code>com.jcurl2.plugin.extension</code>，并继承标记接口 <code>com.jcurl2.plugin.ExtensionPoint</code>。插件加载时，<code>PluginManager</code> 会发现它实现的所有扩展点并注册到 <code>ExtensionRegistry</code>，宿主程序在合适时机调用它们。</p>
+<p>所有扩展点都位于包 <code>com.jcurl.plugin.extension</code>，并继承标记接口 <code>com.jcurl.plugin.ExtensionPoint</code>。插件加载时，<code>PluginManager</code> 会发现它实现的所有扩展点并注册到 <code>ExtensionRegistry</code>，宿主程序在合适时机调用它们。</p>
 
 <p>共有 <strong>四大扩展点</strong>：</p>
 <table>
@@ -654,7 +654,7 @@ Write plugins against the <code>PluginContext</code> interface, not a specific i
 </div>
 
 <p>插件 API 的包结构概览：</p>
-<pre><code class="language-text">com.jcurl2.plugin
+<pre><code class="language-text">com.jcurl.plugin
   ├── JcurlPlugin            (注解)
   ├── ExtensionPoint         (标记接口)
   ├── PluginContext          (宿主服务)
@@ -664,7 +664,7 @@ Write plugins against the <code>PluginContext</code> interface, not a specific i
        ├── VariableFunctionExtension
        └── MetricsCollectorExtension
 
-com.jcurl2.model
+com.jcurl.model
   ├── dto
   │    ├── RequestConfig
   │    ├── ResponseData
@@ -678,7 +678,7 @@ com.jcurl2.model
 
 <section id="annotation-zh">
 <h2>2. @JcurlPlugin 注解</h2>
-<p>每个插件主类必须用 <code>@JcurlPlugin</code>（包 <code>com.jcurl2.plugin</code>）标注。该注解提供在插件管理界面显示的元数据，并在运行时保留（<code>@Retention(RUNTIME)</code>、<code>@Target(TYPE)</code>）。</p>
+<p>每个插件主类必须用 <code>@JcurlPlugin</code>（包 <code>com.jcurl.plugin</code>）标注。该注解提供在插件管理界面显示的元数据，并在运行时保留（<code>@Retention(RUNTIME)</code>、<code>@Target(TYPE)</code>）。</p>
 
 <div class="sig">@Retention(RetentionPolicy.RUNTIME)<br>@Target(ElementType.TYPE)<br>public @interface JcurlPlugin</div>
 
@@ -692,11 +692,11 @@ com.jcurl2.model
 </table>
 
 <h4>最小示例</h4>
-<pre><code class="language-java">import com.jcurl2.model.component.Header;
-import com.jcurl2.model.dto.RequestConfig;
-import com.jcurl2.plugin.JcurlPlugin;
-import com.jcurl2.plugin.PluginContext;
-import com.jcurl2.plugin.extension.RequestInterceptor;
+<pre><code class="language-java">import com.jcurl.plugin.model.component.Header;
+import com.jcurl.plugin.model.dto.RequestConfig;
+import com.jcurl.plugin.JcurlPlugin;
+import com.jcurl.plugin.PluginContext;
+import com.jcurl.plugin.extension.RequestInterceptor;
 
 @JcurlPlugin(
         name = "签名插件",
@@ -715,7 +715,7 @@ public class SignPlugin implements RequestInterceptor {
 
 <section id="context-zh">
 <h2>3. PluginContext 接口</h2>
-<p><code>PluginContext</code> 接口（包 <code>com.jcurl2.plugin</code>）是插件访问宿主程序的窗口。它是<strong>所有版本</strong>（core/JavaFX/Swing）共同实现的最小共享契约，因此基于它编写的代码到处可用。core 版本额外提供了 <code>CorePluginContext</code>，它扩展 <code>PluginContext</code> 暴露更多服务。</p>
+<p><code>PluginContext</code> 接口（包 <code>com.jcurl.plugin</code>）是插件访问宿主程序的窗口。它是<strong>所有版本</strong>（core/JavaFX/Swing）共同实现的最小共享契约，因此基于它编写的代码到处可用。core 版本额外提供了 <code>CorePluginContext</code>，它扩展 <code>PluginContext</code> 暴露更多服务。</p>
 
 <div class="sig">public interface PluginContext</div>
 
@@ -763,7 +763,7 @@ public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
 </table>
 
 <h4>RequestConfig 模型</h4>
-<p>类 <code>com.jcurl2.model.dto.RequestConfig</code> 是执行时的瞬时请求配置（区别于持久化的 <code>RequestNode</code>）。其可变字段通过 getter/setter 访问：</p>
+<p>类 <code>com.jcurl.plugin.model.dto.RequestConfig</code> 是执行时的瞬时请求配置（区别于持久化的 <code>RequestNode</code>）。其可变字段通过 getter/setter 访问：</p>
 <table>
 <tr><th>字段</th><th>类型</th><th>Getter</th></tr>
 <tr><td>method</td><td>String</td><td><code>getMethod()</code>（默认 <code>"GET"</code>）</td></tr>
@@ -775,7 +775,7 @@ public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
 </table>
 
 <h4>Header 模型</h4>
-<p>类 <code>com.jcurl2.model.component.Header</code>——带 <code>enabled</code> 标志和可选 <code>description</code> 的键值对。</p>
+<p>类 <code>com.jcurl.plugin.model.component.Header</code>——带 <code>enabled</code> 标志和可选 <code>description</code> 的键值对。</p>
 <pre><code class="language-java">new Header(String key, String value)                 // enabled = true
 new Header(String key, String value, boolean enabled)
 // getter: getKey(), getValue(), isEnabled(), getDescription()</code></pre>
@@ -817,7 +817,7 @@ public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {
 </table>
 
 <h4>ResponseData 模型</h4>
-<p>类 <code>com.jcurl2.model.dto.ResponseData</code> 持有完整响应。主要访问器：</p>
+<p>类 <code>com.jcurl.plugin.model.dto.ResponseData</code> 持有完整响应。主要访问器：</p>
 <table>
 <tr><th>字段</th><th>类型</th><th>Getter</th></tr>
 <tr><td>statusCode</td><td>int</td><td><code>getStatusCode()</code>（如 200）</td></tr>
@@ -943,16 +943,16 @@ public Map&lt;String, Double&gt; collectMetrics(RequestConfig config, ResponseDa
 <section id="example-zh">
 <h2>8. 完整示例 (DemoPlugin.java)</h2>
 <p>下面的插件同时实现<strong>全部四个</strong>扩展点。把它放入 <code>./.api-client/plugins/</code>，下次扫描插件时即会编译加载。</p>
-<pre><code class="language-java">import com.jcurl2.model.component.Header;
-import com.jcurl2.model.dto.RequestConfig;
-import com.jcurl2.model.dto.ResponseData;
-import com.jcurl2.plugin.ExtensionPoint;
-import com.jcurl2.plugin.JcurlPlugin;
-import com.jcurl2.plugin.PluginContext;
-import com.jcurl2.plugin.extension.MetricsCollectorExtension;
-import com.jcurl2.plugin.extension.RequestInterceptor;
-import com.jcurl2.plugin.extension.ResponseInterceptor;
-import com.jcurl2.plugin.extension.VariableFunctionExtension;
+<pre><code class="language-java">import com.jcurl.plugin.model.component.Header;
+import com.jcurl.plugin.model.dto.RequestConfig;
+import com.jcurl.plugin.model.dto.ResponseData;
+import com.jcurl.plugin.ExtensionPoint;
+import com.jcurl.plugin.JcurlPlugin;
+import com.jcurl.plugin.PluginContext;
+import com.jcurl.plugin.extension.MetricsCollectorExtension;
+import com.jcurl.plugin.extension.RequestInterceptor;
+import com.jcurl.plugin.extension.ResponseInterceptor;
+import com.jcurl.plugin.extension.VariableFunctionExtension;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
