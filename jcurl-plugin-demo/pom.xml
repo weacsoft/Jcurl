@@ -20,10 +20,10 @@
     </properties>
 
     <dependencies>
-        <!-- 编译时依赖 jcurl-core 的插件接口 (scope=provided, 不打包进 JAR) -->
+        <!-- 编译时依赖 jcurl-plugin-api 的插件接口 (scope=provided, 不打包进 JAR) -->
         <dependency>
             <groupId>com.jcurl</groupId>
-            <artifactId>jcurl-core</artifactId>
+            <artifactId>jcurl-plugin-api</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>

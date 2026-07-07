@@ -10,14 +10,13 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * JSON 文件存储服务 — 封装所有 {@code ~/.api-client/} 目录下的 JSON 文件读写。
+ * JSON 文件存储服务 — 封装所有 {@code .api-client/} 目录下的 JSON 文件读写。
  * <p>
  * 特性:
  * <ul>
@@ -50,15 +49,12 @@ public class JsonStoreService {
     /**
      * 应用启动时初始化数据目录结构。
      * <p>
-     * 读取 {@code jcurl2.data-dir} 配置(默认 {@code ~/.api-client/}),
+     * 读取 {@code jcurl2.data-dir} 配置(默认 {@code .api-client/}),
      * 创建根目录与所有子目录。
      */
     @PostConstruct
     public void init() {
-        String configured = properties.getDataDir();
-        baseDir = (configured != null && !configured.isBlank())
-                ? Paths.get(configured)
-                : Paths.get(System.getProperty("user.home"), ".api-client");
+        baseDir = resolveDataDir();
 
         try {
             Files.createDirectories(baseDir);
@@ -72,6 +68,31 @@ public class JsonStoreService {
         }
     }
 
+    /**
+     * 解析数据目录路径。
+     * <p>
+     * 优先级:
+     * 1. 系统属性 jcurl.data-dir
+     * 2. 环境变量 JCURL_DATA_DIR
+     * 3. 配置文件中的 jcurl2.data-dir
+     * 4. 默认: 当前工作目录下 .api-client
+     */
+    private Path resolveDataDir() {
+        String sysProp = System.getProperty("jcurl.data-dir");
+        if (sysProp != null && !sysProp.isBlank()) {
+            return Path.of(sysProp);
+        }
+        String envVar = System.getenv("JCURL_DATA_DIR");
+        if (envVar != null && !envVar.isBlank()) {
+            return Path.of(envVar);
+        }
+        String configured = properties.getDataDir();
+        if (configured != null && !configured.isBlank()) {
+            return Path.of(configured);
+        }
+        return Path.of(System.getProperty("user.dir"), ".api-client");
+    }
+
     /** 获取数据根目录 */
     public Path getBaseDir() {
         return baseDir;
@@ -80,7 +101,7 @@ public class JsonStoreService {
     /**
      * 读取 JSON 文件并反序列化为指定类型。
      *
-     * @param relativePath 相对于 {@code ~/.api-client/} 的路径,如 {@code "collections/订单服务.json"}
+     * @param relativePath 相对于 {@code .api-client/} 的路径,如 {@code "collections/订单服务.json"}
      * @param type         目标类型
      * @return 反序列化对象,文件不存在时返回 {@code null}
      */

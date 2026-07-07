@@ -9,10 +9,10 @@ spring:
 
 # Jcurl 配置
 jcurl:
-  # 数据根目录 (用户目录下)
-  data-dir: ${user.home}/.api-client
+  # 数据根目录 (当前工作目录下)
+  data-dir: ./.api-client
   # 插件目录
-  plugin-dir: ${user.home}/.api-client/plugins
+  plugin-dir: ./.api-client/plugins
   # 默认请求超时 (秒)
   default-timeout: 30
   # 历史记录上限

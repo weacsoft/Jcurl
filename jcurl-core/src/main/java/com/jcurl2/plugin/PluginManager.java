@@ -21,7 +21,7 @@ import java.util.stream.Stream;
  * <p>
  * 职责:
  * <ul>
- *   <li>扫描插件目录({@code ~/.api-client/plugins/})中的 .java 源文件</li>
+ *   <li>扫描插件目录({@code .api-client/plugins/})中的 .java 源文件</li>
  *   <li>编译源文件(去除注释后编译)并加载类</li>
  *   <li>发现实现 {@link ExtensionPoint} 的类并实例化</li>
  *   <li>注册到 {@link ExtensionRegistry}</li>

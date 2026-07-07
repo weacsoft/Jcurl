@@ -179,8 +179,8 @@ public class JavaSourceCompiler {
             if (jarPath == null) return null;
             if (!isFatJar(jarPath)) return null;
 
-            // 缓存目录: ~/.api-client/classpath-cache/
-            Path cacheDir = Path.of(System.getProperty("user.home"), ".api-client", "classpath-cache");
+            // 缓存目录: .api-client/classpath-cache/ (当前工作目录下)
+            Path cacheDir = Path.of(System.getProperty("user.dir"), ".api-client", "classpath-cache");
             Path cacheMarker = cacheDir.resolve("cache.info");
 
             // 检查缓存是否有效 (fat jar 未修改则复用)

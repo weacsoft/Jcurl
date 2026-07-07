@@ -26,7 +26,7 @@ import java.util.UUID;
  *   <li>自动持久化: 每次树操作后自动保存集合到磁盘</li>
  * </ul>
  * <p>
- * 文件存储路径: {@code ~/.api-client/collections/{collectionId}.json}
+ * 文件存储路径: {@code .api-client/collections/{collectionId}.json}
  */
 @Service
 public class CollectionService {

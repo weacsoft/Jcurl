@@ -28,7 +28,7 @@ import java.nio.file.Paths;
  * <p>
  * 启动流程:
  * 1. 设置 FlatLaf 外观 (在创建任何 Swing 组件之前)
- * 2. 确保用户数据目录存在 (~/.api-client/)
+ * 2. 确保数据目录存在 (./.api-client/)
  * 3. 以非 Web 模式启动 SpringBoot 容器
  * 4. 在 EDT 中从容器获取 MainFrame 并显示
  * 5. 注册关闭钩子, 窗口关闭时优雅关闭 SpringBoot
@@ -39,6 +39,28 @@ public class JcurlApplication {
 
     /** 数据根目录名 */
     private static final String DATA_DIR_NAME = ".api-client";
+
+    /**
+     * 解析数据目录路径 (在 Spring 上下文启动前使用)。
+     * <p>
+     * 优先级:
+     * 1. 系统属性 jcurl.data-dir
+     * 2. 环境变量 JCURL_DATA_DIR
+     * 3. 默认: 当前工作目录下 .api-client
+     *
+     * @return 数据目录路径
+     */
+    private static Path resolveDataDir() {
+        String sysProp = System.getProperty("jcurl.data-dir");
+        if (sysProp != null && !sysProp.trim().isEmpty()) {
+            return Paths.get(sysProp);
+        }
+        String envVar = System.getenv("JCURL_DATA_DIR");
+        if (envVar != null && !envVar.trim().isEmpty()) {
+            return Paths.get(envVar);
+        }
+        return Paths.get(System.getProperty("user.dir"), DATA_DIR_NAME);
+    }
 
     public static void main(String[] args) {
         // 1. 设置 FlatLaf 外观 (必须在创建任何 Swing 组件之前)
@@ -68,7 +90,7 @@ public class JcurlApplication {
      * 启动时设置 FlatLaf 外观。
      * <p>
      * 由于此时 Spring 上下文尚未启动, 无法使用 {@code SettingsStore} (Spring Bean),
-     * 因此直接读取 {@code ~/.api-client/settings.json}:
+     * 因此直接读取 {@code .api-client/settings.json}:
      * <ul>
      *   <li>theme = "dark" → 使用 FlatDarculaLaf, 否则使用 FlatIntelliJLaf</li>
      *   <li>fontSize &gt; 0 → 覆盖 FlatLaf 默认字体大小</li>
@@ -79,7 +101,7 @@ public class JcurlApplication {
         String theme = "light";
         int fontSize = -1;
 
-        Path settingsFile = Paths.get(System.getProperty("user.home"), DATA_DIR_NAME, "settings.json");
+        Path settingsFile = resolveDataDir().resolve("settings.json");
         File file = settingsFile.toFile();
         if (file.isFile()) {
             try {
@@ -116,9 +138,9 @@ public class JcurlApplication {
     }
 
     /**
-     * 确保用户数据目录结构存在。
+     * 确保数据目录结构存在。
      * <pre>
-     * ~/.api-client/
+     * .api-client/
      *   ├── collections/      (集合 JSON 文件)
      *   ├── environments/     (环境 JSON 文件)
      *   ├── plugins/loaded/   (已加载插件)
@@ -128,7 +150,7 @@ public class JcurlApplication {
      * </pre>
      */
     private static void ensureUserDataDirs() {
-        Path dataDir = Paths.get(System.getProperty("user.home"), DATA_DIR_NAME);
+        Path dataDir = resolveDataDir();
         String[] subDirs = {
                 "collections",
                 "environments",

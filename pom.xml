@@ -19,6 +19,7 @@
     <description>Jcurl 多模块聚合父 POM</description>
 
     <modules>
+        <module>jcurl-plugin-api</module>
         <module>jcurl-core</module>
         <module>jcurl-javafx</module>
         <module>jcurl-swing</module>

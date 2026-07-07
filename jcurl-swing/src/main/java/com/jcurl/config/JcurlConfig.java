@@ -15,7 +15,7 @@ import java.nio.file.Paths;
  * Jcurl SpringBoot 配置类。
  * <p>
  * v2 架构: 移除 JPA/Hibernate/SQLite, 改为纯 JSON 文件存储。
- * 数据目录结构 ~/.api-client/:
+ * 数据目录结构 .api-client/:
  *   collections/    — 每个集合一个 .json 文件
  *   environments/   — 每个环境一个 .json 文件
  *   plugins/        — 插件目录

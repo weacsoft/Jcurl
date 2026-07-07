@@ -7,7 +7,7 @@ package com.jcurl2.config;
  */
 public class AppProperties {
 
-    /** 数据存储根目录,默认 {@code ~/.api-client/} */
+    /** 数据存储根目录,默认 {@code ./.api-client/} */
     private String dataDir;
 
     /** 历史记录上限,默认 500 条 */

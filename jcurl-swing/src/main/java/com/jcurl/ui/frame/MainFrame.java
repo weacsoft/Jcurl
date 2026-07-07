@@ -199,12 +199,7 @@ public class MainFrame extends JFrame {
         setupSidebarCallbacks();
         setupKeyboardShortcuts();
 
-        // 初始加载: 加载所有插件
-        try {
-            pluginManager.loadAll();
-        } catch (Exception e) {
-            log.warn("加载插件失败", e);
-        }
+        // 插件已由 PluginManager @PostConstruct 异步加载,无需重复调用
         refreshEnvironmentCombo();
         sidebarPanel.refreshTree();
         sidebarPanel.refreshHistory();
@@ -442,12 +437,8 @@ public class MainFrame extends JFrame {
             log.warn("变量替换失败", e);
         }
 
-        // 应用插件请求拦截器
-        try {
-            config = pluginManager.applyRequestInterceptors(config);
-        } catch (Exception e) {
-            log.warn("应用请求拦截器失败", e);
-        }
+        // 注: 插件请求拦截器 / 响应拦截器现由 HttpEngineService 内部统一应用
+        // (通过 Swing 模型 ↔ 共享模型 适配器), 此处不再重复调用。
 
         final RequestConfig finalConfig = config;
         setSending(true);
@@ -465,12 +456,7 @@ public class MainFrame extends JFrame {
                 setSending(false);
                 try {
                     ResponseData response = get();
-                    // 应用插件响应处理器
-                    try {
-                        response = pluginManager.applyResponseProcessors(response);
-                    } catch (Exception ex) {
-                        log.warn("应用响应处理器失败", ex);
-                    }
+                    // 注: 插件响应拦截器已由 HttpEngineService 内部应用 (通过适配器), 此处直接展示。
                     responsePanel.showResponse(response);
                     if (response.getStatusCode() == 0) {
                         statusLabel.setText("请求失败: " + response.getErrorMessage());

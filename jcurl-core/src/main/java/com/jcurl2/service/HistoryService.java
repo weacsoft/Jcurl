@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
  *   <li>清空与删除: 支持单条删除与全部清空</li>
  * </ul>
  * <p>
- * 存储路径: {@code ~/.api-client/history.json}
+ * 存储路径: {@code .api-client/history.json}
  */
 @Service
 public class HistoryService {

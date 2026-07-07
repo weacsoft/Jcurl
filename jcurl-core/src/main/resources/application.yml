@@ -23,8 +23,8 @@ spring:
 
 # Jcurl2 自定义配置
 jcurl2:
-  # 数据存储根目录(默认用户主目录下 .api-client)
-  data-dir: ${user.home}/.api-client
+  # 数据存储根目录(默认当前工作目录下 .api-client)
+  data-dir: ./.api-client
   # 历史记录上限
   history-limit: 500
   # 默认主题: light / dark

@@ -20,9 +20,9 @@ import java.util.UUID;
  * <p>
  * 存储路径:
  * <ul>
- *   <li>环境: {@code ~/.api-client/environments/{environmentId}.json}</li>
- *   <li>全局变量: {@code ~/.api-client/globals.json}</li>
- *   <li>设置: {@code ~/.api-client/settings.json}</li>
+ *   <li>环境: {@code .api-client/environments/{environmentId}.json}</li>
+ *   <li>全局变量: {@code .api-client/globals.json}</li>
+ *   <li>设置: {@code .api-client/settings.json}</li>
  * </ul>
  */
 @Service

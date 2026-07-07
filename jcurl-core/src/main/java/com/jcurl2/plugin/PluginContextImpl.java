@@ -18,8 +18,9 @@ import java.nio.file.Path;
  * <p>
  * 由 {@link PluginService} 创建,注入所有宿主服务依赖。
  * 插件通过此对象访问 CollectionService、EnvironmentService 等,无需直接依赖 Spring。
+ * 实现 {@link CorePluginContext} 以暴露 core 特有的服务访问方法。
  */
-public class PluginContextImpl implements PluginContext {
+public class PluginContextImpl implements CorePluginContext {
 
     private static final Logger log = LoggerFactory.getLogger(PluginContextImpl.class);
 

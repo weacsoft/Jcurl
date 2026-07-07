@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -65,14 +64,26 @@ public class CookieService {
     }
 
     private Path resolveDataDir(AppProperties properties) {
+        // 1. 系统属性 jcurl.data-dir 优先
+        String sysProp = System.getProperty("jcurl.data-dir");
+        if (sysProp != null && !sysProp.isBlank()) {
+            return Path.of(sysProp);
+        }
+        // 2. 环境变量 JCURL_DATA_DIR
+        String envVar = System.getenv("JCURL_DATA_DIR");
+        if (envVar != null && !envVar.isBlank()) {
+            return Path.of(envVar);
+        }
+        // 3. 配置文件中的 jcurl2.data-dir
         if (properties == null) {
             return null;
         }
         String dir = properties.getDataDir();
         if (dir != null && !dir.isBlank()) {
-            return Paths.get(dir);
+            return Path.of(dir);
         }
-        return Paths.get(System.getProperty("user.home"), ".api-client");
+        // 4. 默认: 当前工作目录下 .api-client
+        return Path.of(System.getProperty("user.dir"), ".api-client");
     }
 
     /**

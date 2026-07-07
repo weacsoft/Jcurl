@@ -23,8 +23,8 @@ Thumbs.db
 *.log
 logs/
 
-# JPostman runtime data (开发时生成的数据)
-~/.api-client/
+# Jcurl runtime data (运行时生成的数据目录)
+.api-client/
 
 # Spring Boot
 *.original

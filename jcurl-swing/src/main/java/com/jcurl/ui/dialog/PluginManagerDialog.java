@@ -1,6 +1,5 @@
 package com.jcurl.ui.dialog;
 
-import com.jcurl.plugin.PluginInfo;
 import com.jcurl.plugin.PluginManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +32,6 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 
@@ -43,7 +41,7 @@ import java.util.List;
  * 功能:
  * <ul>
  *   <li><b>安装插件</b>: 通过 AWT {@link FileDialog} 选择 .java 或 .jar 文件,
- *       复制到插件目录 ({@code ~/.api-client/plugins}) 并加载</li>
+ *       复制到插件目录并加载</li>
  *   <li><b>卸载插件</b>: 从注册表移除选中插件 (保留源文件)</li>
  *   <li><b>启用/禁用插件</b>: 注册/取消注册扩展点,保留插件实例</li>
  *   <li><b>重载插件/重载全部</b>: 先卸载再重新加载</li>
@@ -69,11 +67,10 @@ public class PluginManagerDialog extends JDialog {
     private JTable table;
     private JLabel statusLabel;
 
-    /** 插件目录: ${user.home}/.api-client/plugins (与 application.yml 中 jcurl.plugin-dir 一致) */
-    private static final Path PLUGIN_DIR =
-            Paths.get(System.getProperty("user.home"), ".api-client", "plugins");
+    /** 插件目录 (从 PluginManager 获取, 与 application.yml 中 jcurl.plugin-dir 一致) */
+    private final Path pluginDir;
     /** 默认插件源文件路径 */
-    private static final Path DEFAULT_PLUGIN_FILE = PLUGIN_DIR.resolve("DefaultPlugin.java");
+    private final Path defaultPluginFile;
 
     /** 无插件时显示的占位文本 (该行不可操作) */
     private static final String EMPTY_PLACEHOLDER = "(无已加载插件)";
@@ -95,52 +92,77 @@ public class PluginManagerDialog extends JDialog {
 
     /**
      * 默认插件模板代码 — 保存为 {@code DefaultPlugin.java} 后编译加载。
-     * 实现 JcurlPlugin + RequestInterceptor + ResponseProcessor 三个接口。
+     * 使用共享插件接口 (com.jcurl2.plugin.*), 通过 @JcurlPlugin 注解提供元数据,
+     * 实现 RequestInterceptor + ResponseInterceptor + VariableFunctionExtension + MetricsCollectorExtension 四个扩展点,
+     * 展示全部四个扩展点的用法。
      */
     private static final String DEFAULT_PLUGIN_TEMPLATE =
-            "import com.jcurl.model.dto.RequestConfig;\n" +
-            "import com.jcurl.model.dto.ResponseData;\n" +
-            "import com.jcurl.plugin.JcurlPlugin;\n" +
-            "import com.jcurl.plugin.RequestInterceptor;\n" +
-            "import com.jcurl.plugin.ResponseProcessor;\n" +
+            "import com.jcurl2.model.component.Header;\n" +
+            "import com.jcurl2.model.dto.RequestConfig;\n" +
+            "import com.jcurl2.model.dto.ResponseData;\n" +
+            "import com.jcurl2.plugin.JcurlPlugin;\n" +
+            "import com.jcurl2.plugin.PluginContext;\n" +
+            "import com.jcurl2.plugin.extension.MetricsCollectorExtension;\n" +
+            "import com.jcurl2.plugin.extension.RequestInterceptor;\n" +
+            "import com.jcurl2.plugin.extension.ResponseInterceptor;\n" +
+            "import com.jcurl2.plugin.extension.VariableFunctionExtension;\n" +
+            "\n" +
+            "import java.util.Arrays;\n" +
+            "import java.util.HashMap;\n" +
+            "import java.util.List;\n" +
+            "import java.util.Map;\n" +
             "\n" +
             "/**\n" +
-            " * 默认插件模板 — 可在此处编写简单的插件逻辑。\n" +
+            " * 默认插件模板 — 可在此处编写插件逻辑。\n" +
             " * 保存后会自动编译并加载（需要 JDK 环境）。\n" +
+            " * 使用 @JcurlPlugin 注解提供元数据, 实现了全部四个扩展点, 可按需删除不需要的接口。\n" +
             " */\n" +
-            "public class DefaultPlugin implements JcurlPlugin, RequestInterceptor, ResponseProcessor {\n" +
+            "@JcurlPlugin(name = \"默认插件\", description = \"内置默认插件模板,可编辑后重载\", version = \"1.0.0\", author = \"Jcurl\")\n" +
+            "public class DefaultPlugin implements RequestInterceptor, ResponseInterceptor,\n" +
+            "        VariableFunctionExtension, MetricsCollectorExtension {\n" +
             "\n" +
+            "    // ===== 请求拦截器 =====\n" +
             "    @Override\n" +
-            "    public void onLoad() {\n" +
-            "        System.out.println(\"[DefaultPlugin] 已加载\");\n" +
-            "    }\n" +
-            "\n" +
-            "    @Override\n" +
-            "    public void onUnload() {\n" +
-            "        System.out.println(\"[DefaultPlugin] 已卸载\");\n" +
-            "    }\n" +
-            "\n" +
-            "    @Override\n" +
-            "    public String getName() { return \"默认插件\"; }\n" +
-            "\n" +
-            "    @Override\n" +
-            "    public String getVersion() { return \"1.0.0\"; }\n" +
-            "\n" +
-            "    @Override\n" +
-            "    public String getDescription() { return \"内置默认插件模板,可编辑后重载\"; }\n" +
-            "\n" +
-            "    @Override\n" +
-            "    public RequestConfig intercept(RequestConfig config) {\n" +
+            "    public RequestConfig beforeRequest(RequestConfig config, PluginContext ctx) {\n" +
             "        // 在此处修改请求,例如添加请求头:\n" +
-            "        // config.getHeaders().add(new com.jcurl.model.KeyValue(\"X-Custom\", \"value\"));\n" +
+            "        // config.getHeaders().add(new Header(\"X-Custom\", \"value\"));\n" +
+            "        ctx.log(\"info\", \"[默认插件] 发送请求: \" + config.getMethod() + \" \" + config.getUrl());\n" +
             "        return config;\n" +
             "    }\n" +
             "\n" +
+            "    // ===== 响应拦截器 =====\n" +
             "    @Override\n" +
-            "    public ResponseData process(ResponseData response) {\n" +
+            "    public ResponseData afterResponse(ResponseData response, RequestConfig config, PluginContext ctx) {\n" +
             "        // 在此处处理响应,例如记录日志:\n" +
-            "        // System.out.println(\"响应状态: \" + response.getStatusCode());\n" +
+            "        // ctx.log(\"info\", \"响应状态: \" + response.getStatusCode());\n" +
             "        return response;\n" +
+            "    }\n" +
+            "\n" +
+            "    // ===== 变量函数 =====\n" +
+            "    @Override\n" +
+            "    public List<String> getFunctionNames(PluginContext ctx) {\n" +
+            "        return Arrays.asList(\"hello\");\n" +
+            "    }\n" +
+            "\n" +
+            "    @Override\n" +
+            "    public String executeFunction(String functionName, String args, PluginContext ctx) {\n" +
+            "        if (\"hello\".equals(functionName)) {\n" +
+            "            return \"hello, \" + (args != null ? args : \"world\");\n" +
+            "        }\n" +
+            "        return null;\n" +
+            "    }\n" +
+            "\n" +
+            "    // ===== 指标采集 =====\n" +
+            "    @Override\n" +
+            "    public List<String> getMetricNames() {\n" +
+            "        return Arrays.asList(\"status_code\");\n" +
+            "    }\n" +
+            "\n" +
+            "    @Override\n" +
+            "    public Map<String, Double> collectMetrics(RequestConfig config, ResponseData response, PluginContext ctx) {\n" +
+            "        Map<String, Double> metrics = new HashMap<String, Double>();\n" +
+            "        metrics.put(\"status_code\", (double) response.getStatusCode());\n" +
+            "        return metrics;\n" +
             "    }\n" +
             "}\n";
 
@@ -151,6 +173,8 @@ public class PluginManagerDialog extends JDialog {
     public PluginManagerDialog(JFrame parent, PluginManager pluginManager) {
         super(parent, "插件管理", true);
         this.pluginManager = pluginManager;
+        this.pluginDir = pluginManager.getPluginDir();
+        this.defaultPluginFile = pluginDir.resolve("DefaultPlugin.java");
         initUI();
         loadPlugins();
         setSize(980, 540);
@@ -333,9 +357,9 @@ public class PluginManagerDialog extends JDialog {
             @Override
             protected String doInBackground() throws Exception {
                 // 确保插件目录存在
-                Files.createDirectories(PLUGIN_DIR);
+                Files.createDirectories(pluginDir);
                 // 复制到插件目录 (覆盖同名文件)
-                Path target = PLUGIN_DIR.resolve(finalSourceFile.getName());
+                Path target = pluginDir.resolve(finalSourceFile.getName());
                 Files.copy(finalSourceFile.toPath(), target, StandardCopyOption.REPLACE_EXISTING);
                 // 根据文件类型加载
                 String name = finalSourceFile.getName().toLowerCase();
@@ -462,8 +486,8 @@ public class PluginManagerDialog extends JDialog {
      */
     private void loadPlugins() {
         tableModel.setRowCount(0);
-        List<PluginInfo> plugins = pluginManager.getLoadedPlugins();
-        for (PluginInfo info : plugins) {
+        List<PluginManager.PluginInfo> plugins = pluginManager.getLoadedPlugins();
+        for (PluginManager.PluginInfo info : plugins) {
             String extPoints = (info.getExtensionPoints() != null && !info.getExtensionPoints().isEmpty())
                     ? String.join(", ", info.getExtensionPoints()) : "";
             tableModel.addRow(new Object[]{
@@ -592,7 +616,7 @@ public class PluginManagerDialog extends JDialog {
     /**
      * 默认插件编辑器对话框 — 编辑 DefaultPlugin.java 模板, 保存后编译并重载。
      * <p>
-     * 如果 {@code ~/.api-client/plugins/DefaultPlugin.java} 已存在, 加载其内容;
+     * 如果 {@code DefaultPlugin.java} 已存在, 加载其内容;
      * 否则加载内置模板代码。保存时写入文件并调用 PluginManager 重载。
      */
     private class DefaultPluginEditorDialog extends JDialog {
@@ -636,9 +660,9 @@ public class PluginManagerDialog extends JDialog {
          * 加载初始内容: 如果 DefaultPlugin.java 已存在则读取其内容, 否则使用内置模板。
          */
         private String loadInitialContent() {
-            if (Files.exists(DEFAULT_PLUGIN_FILE)) {
+            if (Files.exists(defaultPluginFile)) {
                 try {
-                    return new String(Files.readAllBytes(DEFAULT_PLUGIN_FILE), StandardCharsets.UTF_8);
+                    return new String(Files.readAllBytes(defaultPluginFile), StandardCharsets.UTF_8);
                 } catch (Exception e) {
                     log.warn("读取默认插件文件失败, 使用模板: {}", e.getMessage());
                 }
@@ -671,12 +695,12 @@ public class PluginManagerDialog extends JDialog {
                 @Override
                 protected Boolean doInBackground() throws Exception {
                     // 确保插件目录存在
-                    Files.createDirectories(PLUGIN_DIR);
+                    Files.createDirectories(pluginDir);
                     // 写入源码
-                    Files.write(DEFAULT_PLUGIN_FILE, code.getBytes(StandardCharsets.UTF_8));
+                    Files.write(defaultPluginFile, code.getBytes(StandardCharsets.UTF_8));
                     // 判断插件是否已加载: 已加载则 reload, 否则 loadJavaPlugin
                     boolean exists = false;
-                    for (PluginInfo info : pluginManager.getLoadedPlugins()) {
+                    for (PluginManager.PluginInfo info : pluginManager.getLoadedPlugins()) {
                         if ("DefaultPlugin".equals(info.getId())) {
                             exists = true;
                             break;
@@ -685,7 +709,7 @@ public class PluginManagerDialog extends JDialog {
                     if (exists) {
                         pluginManager.reloadPlugin("DefaultPlugin");
                     } else {
-                        pluginManager.loadJavaPlugin(DEFAULT_PLUGIN_FILE);
+                        pluginManager.loadJavaPlugin(defaultPluginFile);
                     }
                     return Boolean.TRUE;
                 }

@@ -313,9 +313,21 @@ public class PluginService {
     // ==================== 内部工具 ====================
 
     private Path resolveDataDir() {
+        // 1. 系统属性 jcurl.data-dir 优先
+        String sysProp = System.getProperty("jcurl.data-dir");
+        if (sysProp != null && !sysProp.isBlank()) {
+            return Path.of(sysProp);
+        }
+        // 2. 环境变量 JCURL_DATA_DIR
+        String envVar = System.getenv("JCURL_DATA_DIR");
+        if (envVar != null && !envVar.isBlank()) {
+            return Path.of(envVar);
+        }
+        // 3. 配置文件中的 jcurl2.data-dir
         if (appProperties.getDataDir() != null && !appProperties.getDataDir().isBlank()) {
             return Path.of(appProperties.getDataDir());
         }
-        return Path.of(System.getProperty("user.home"), ".api-client");
+        // 4. 默认: 当前工作目录下 .api-client
+        return Path.of(System.getProperty("user.dir"), ".api-client");
     }
 }

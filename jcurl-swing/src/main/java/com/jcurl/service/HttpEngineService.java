@@ -197,10 +197,15 @@ public class HttpEngineService {
         // 记录请求 URL, 供响应面板推导 <base href> 以渲染 HTML 中的相对资源
         response.setRequestUrl(url);
 
-        // 插件: 请求拦截器
+        // 插件: 请求拦截器 (Swing 模型 ↔ 共享模型 适配)
+        // 将 Swing RequestConfig 转换为共享 RequestConfig, 调用插件拦截器,
+        // 再将插件修改 (主要是 headers) 应用回 Swing RequestConfig。
+        com.jcurl2.model.dto.RequestConfig sharedRequest = null;
         if (pluginManager != null) {
             try {
-                config = pluginManager.applyRequestInterceptors(config);
+                sharedRequest = toSharedRequest(config);
+                sharedRequest = pluginManager.applyRequestInterceptors(sharedRequest);
+                applySharedToSwing(sharedRequest, config);
             } catch (Exception e) {
                 log.error("请求拦截器执行失败", e);
             }
@@ -328,12 +333,16 @@ public class HttpEngineService {
             }
         }
 
-        // 插件: 响应处理器
-        if (pluginManager != null) {
+        // 插件: 响应拦截器 (Swing 模型 ↔ 共享模型 适配)
+        // 将 Swing ResponseData 转换为共享 ResponseData, 调用插件响应拦截器,
+        // 再将插件修改 (headers / body) 应用回 Swing ResponseData。
+        if (pluginManager != null && sharedRequest != null) {
             try {
-                response = pluginManager.applyResponseProcessors(response);
+                com.jcurl2.model.dto.ResponseData sharedResponse = toSharedResponse(response);
+                sharedResponse = pluginManager.applyResponseProcessors(sharedResponse, sharedRequest);
+                applySharedToSwing(sharedResponse, response);
             } catch (Exception e) {
-                log.error("响应处理器执行失败", e);
+                log.error("响应拦截器执行失败", e);
             }
         }
 
@@ -736,6 +745,108 @@ public class HttpEngineService {
             total += read;
         }
         return baos.toByteArray();
+    }
+
+    // ==================== 插件模型适配器 ====================
+    // Swing 模型类 (com.jcurl.model.dto.*) 与共享插件模型类 (com.jcurl2.model.dto.*)
+    // 字段结构不同, 插件使用共享模型, 这里负责双向转换。
+    // 适配器只转换插件需要用到的字段 (method/url/headers/body/statusCode/timing 等)。
+
+    /**
+     * Swing RequestConfig → 共享 RequestConfig。
+     * 转换 method、url、headers、body (type/content/rawType)。
+     */
+    private com.jcurl2.model.dto.RequestConfig toSharedRequest(RequestConfig swing) {
+        com.jcurl2.model.dto.RequestConfig shared = new com.jcurl2.model.dto.RequestConfig();
+        shared.setMethod(swing.getMethod());
+        shared.setUrl(swing.getUrl());
+        // headers: List<KeyValue> → List<Header> (仅复制启用的头)
+        if (swing.getHeaders() != null) {
+            for (KeyValue h : swing.getHeaders()) {
+                if (h.isEnabled()) {
+                    shared.getHeaders().add(new com.jcurl2.model.component.Header(
+                            h.getKey(), h.getValue()));
+                }
+            }
+        }
+        // body: Swing 使用 bodyType/bodyContent/rawContentType 字符串, 共享使用 RequestBody 对象
+        com.jcurl2.model.component.RequestBody sharedBody = shared.getBody();
+        sharedBody.setType(swing.getBodyType());
+        sharedBody.setContent(swing.getBodyContent());
+        sharedBody.setRawType(swing.getRawContentType());
+        return shared;
+    }
+
+    /**
+     * 将插件修改的共享 RequestConfig 应用回 Swing RequestConfig。
+     * 主要应用 headers 的变化 (插件最常修改的就是 headers)。
+     */
+    private void applySharedToSwing(com.jcurl2.model.dto.RequestConfig shared, RequestConfig swing) {
+        swing.getHeaders().clear();
+        for (com.jcurl2.model.component.Header h : shared.getHeaders()) {
+            swing.getHeaders().add(new KeyValue(h.getKey(), h.getValue(), null, h.isEnabled()));
+        }
+        // body 内容 (插件可能修改了 raw 文本)
+        com.jcurl2.model.component.RequestBody sharedBody = shared.getBody();
+        if (sharedBody.getType() != null) {
+            swing.setBodyType(sharedBody.getType());
+        }
+        if (sharedBody.getContent() != null) {
+            swing.setBodyContent(sharedBody.getContent());
+        }
+        if (sharedBody.getRawType() != null) {
+            swing.setRawContentType(sharedBody.getRawType());
+        }
+    }
+
+    /**
+     * Swing ResponseData → 共享 ResponseData。
+     * 转换 statusCode、statusText、headers、body、contentType、size、error、timing。
+     */
+    private com.jcurl2.model.dto.ResponseData toSharedResponse(ResponseData swing) {
+        com.jcurl2.model.dto.ResponseData shared = new com.jcurl2.model.dto.ResponseData();
+        shared.setStatusCode(swing.getStatusCode());
+        shared.setStatusText(swing.getStatusText());
+        shared.setBody(swing.getResponseBody());
+        shared.setSize(swing.getResponseSize());
+        shared.setError(swing.getErrorMessage());
+        // headers: Map<String,String> → List<Header>
+        if (swing.getResponseHeaders() != null) {
+            for (Map.Entry<String, String> e : swing.getResponseHeaders().entrySet()) {
+                if (e.getKey() != null) {
+                    shared.getHeaders().add(new com.jcurl2.model.component.Header(
+                            e.getKey(), e.getValue() != null ? e.getValue() : ""));
+                }
+            }
+        }
+        // contentType 从响应头推导
+        String contentType = getHeaderIgnoreCase(swing.getResponseHeaders(), "Content-Type");
+        shared.setContentType(contentType);
+        // timing: Swing 各耗时字段 → 共享 TimingMetrics
+        com.jcurl2.model.dto.TimingMetrics timing = new com.jcurl2.model.dto.TimingMetrics();
+        timing.setTotalMs(swing.getResponseTime());
+        timing.setDnsMs(swing.getDnsTime());
+        timing.setTcpMs(swing.getTcpConnectTime());
+        timing.setTtfbMs(swing.getTtfb());
+        shared.setTiming(timing);
+        return shared;
+    }
+
+    /**
+     * 将插件修改的共享 ResponseData 应用回 Swing ResponseData。
+     * 应用 headers 与 body 的变化。
+     */
+    private void applySharedToSwing(com.jcurl2.model.dto.ResponseData shared, ResponseData swing) {
+        // headers: List<Header> → Map<String,String>
+        swing.getResponseHeaders().clear();
+        for (com.jcurl2.model.component.Header h : shared.getHeaders()) {
+            if (h.getKey() != null) {
+                swing.getResponseHeaders().put(h.getKey(),
+                        h.getValue() != null ? h.getValue() : "");
+            }
+        }
+        // body 可能被插件修改
+        swing.setResponseBody(shared.getBody());
     }
 
     /**

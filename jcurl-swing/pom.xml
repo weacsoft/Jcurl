@@ -38,6 +38,13 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- 共享插件 API 模块 (插件接口 + 模型类) -->
+        <dependency>
+            <groupId>com.jcurl</groupId>
+            <artifactId>jcurl-plugin-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- SpringBoot (非 Web, 仅容器) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
