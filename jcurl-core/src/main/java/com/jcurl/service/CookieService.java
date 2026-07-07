@@ -122,6 +122,7 @@ public class CookieService {
         if (requestHost == null || requestHost.isEmpty()) {
             return;
         }
+        log.info("存储 Cookie: url={}, host={}, headerCount={}", url, requestHost, responseHeaders.size());
         for (Header header : responseHeaders) {
             if (header == null || header.getKey() == null) {
                 continue;
@@ -381,6 +382,7 @@ public class CookieService {
         entry.setSecure(secure);
         entry.setHttpOnly(httpOnly);
         getCurrentStore().computeIfAbsent(domainKey, k -> new ConcurrentHashMap<>()).put(name, entry);
+        log.info("Cookie 已存储: {}={} (domain={}, path={})", name, value, domainKey, path);
         persist();
     }
 

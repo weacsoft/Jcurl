@@ -99,6 +99,7 @@ public class CookieService {
         if (requestHost == null || requestHost.isEmpty()) {
             return;
         }
+        log.info("存储 Cookie: url={}, host={}, headerCount={}", url, requestHost, responseHeaders.size());
 
         for (Map.Entry<String, String> entry : responseHeaders.entrySet()) {
             String headerName = entry.getKey();
@@ -130,6 +131,7 @@ public class CookieService {
         if (host == null || host.isEmpty()) {
             return null;
         }
+        log.info("查询 Cookie: url={}, host={}, currentCollection={}", url, host, currentCollectionId);
         boolean secure = isSecureUrl(url);
         String path = extractPath(url);
 
@@ -156,6 +158,7 @@ public class CookieService {
             }
         }
 
+        log.info("匹配到 {} 个 Cookie: {}", pairs.size(), pairs.isEmpty() ? "无" : String.join("; ", pairs));
         if (pairs.isEmpty()) {
             return null;
         }
@@ -379,6 +382,7 @@ public class CookieService {
         entry.setSecure(secure);
         entry.setHttpOnly(httpOnly);
         getCurrentStore().computeIfAbsent(domainKey, k -> new ConcurrentHashMap<>()).put(name, entry);
+        log.info("Cookie 已存储: {}={} (domain={}, path={})", name, value, domainKey, path);
         persist();
     }
 

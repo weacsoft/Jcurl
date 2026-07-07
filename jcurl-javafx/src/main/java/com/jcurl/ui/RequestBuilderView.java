@@ -142,6 +142,8 @@ public class RequestBuilderView implements RequestSelectionListener {
     private CheckBox includeCookiesCheckBox;
     /** Cookie 预览标签 (位于 Headers 表格下方, 展示将随请求发送的 Cookie) */
     private Label cookiePreviewLabel;
+    /** 自动重定向复选框 (默认勾选, 可取消以查看 301/302 原始响应) */
+    private CheckBox followRedirectsCheckBox;
     /**
      * 被用户在 autoHeadersBox 中取消勾选的自动头 key(小写)。
      * <p>
@@ -305,7 +307,7 @@ public class RequestBuilderView implements RequestSelectionListener {
         sendButton.setOnAction(e -> sendRequest());
 
         // Task 2: 保存请求按钮 — 保存到当前集合
-        saveButton = new Button("保存");
+        saveButton = new Button("保存请求");
         saveButton.getStyleClass().add("save-button");
         saveButton.setTooltip(new Tooltip("保存请求到当前集合"));
         saveButton.setOnAction(e -> saveCurrentRequest());
@@ -811,6 +813,13 @@ public class RequestBuilderView implements RequestSelectionListener {
         bodyTypeCombo.setButtonCell(mappingCell(this::bodyTypeDisplay));
         bodyTypeCombo.setOnAction(e -> switchBodyType(bodyTypeCombo.getValue()));
         typeBar.getChildren().add(bodyTypeCombo);
+
+        // 自动重定向开关 (默认勾选, 与 Swing 版保持一致)
+        followRedirectsCheckBox = new CheckBox("自动重定向");
+        followRedirectsCheckBox.setSelected(true);
+        followRedirectsCheckBox.setTooltip(new Tooltip(
+                "勾选时自动跟随 301/302/303/307/308 重定向; 取消则返回原始重定向响应"));
+        typeBar.getChildren().add(followRedirectsCheckBox);
 
         bodyContent = new VBox(8);
 
@@ -1324,6 +1333,9 @@ public class RequestBuilderView implements RequestSelectionListener {
 
         // 包含 Cookies (是否自动附带 Cookie)
         config.setIncludeCookies(includeCookiesCheckBox != null && includeCookiesCheckBox.isSelected());
+
+        // 自动重定向
+        config.setFollowRedirects(followRedirectsCheckBox != null && followRedirectsCheckBox.isSelected());
 
         return config;
     }

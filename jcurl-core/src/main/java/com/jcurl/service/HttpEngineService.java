@@ -134,6 +134,7 @@ public class HttpEngineService {
         Request request = buildRequest(config);
 
         Call call = client.newBuilder()
+                .followRedirects(config.isFollowRedirects())
                 .eventListener(listener)
                 .build()
                 .newCall(request);
@@ -208,6 +209,7 @@ public class HttpEngineService {
         Request request = buildRequest(finalConfig);
 
         Call call = client.newBuilder()
+                .followRedirects(finalConfig.isFollowRedirects())
                 .eventListener(listener)
                 .build()
                 .newCall(request);
@@ -308,9 +310,15 @@ public class HttpEngineService {
                 String cookieValue = cookieService.getCookiesForUrl(config.getUrl());
                 if (cookieValue != null && !cookieValue.isEmpty()) {
                     builder.header("Cookie", cookieValue);
-                    log.debug("自动附加 Cookie: {}", cookieValue);
+                    log.info("自动附加 Cookie: {}", cookieValue);
+                } else {
+                    log.info("无匹配的 Cookie 可附加 (url={})", config.getUrl());
                 }
+            } else {
+                log.info("用户已手动设置 Cookie 头, 跳过自动附加");
             }
+        } else {
+            log.info("已禁用 Cookie 自动附带 (includeCookies=false)");
         }
 
         // 6. Body + Method

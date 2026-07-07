@@ -24,6 +24,8 @@ public class RequestConfig {
     private AuthConfig auth = AuthConfig.none();
     /** 是否自动附带 Cookie (从当前集合存储中匹配域名/路径), 默认 true */
     private boolean includeCookies = true;
+    /** 是否自动跟随重定向 (301/302/303/307/308), 默认 true */
+    private boolean followRedirects = true;
 
     public RequestConfig() {}
 
@@ -59,4 +61,7 @@ public class RequestConfig {
 
     public boolean isIncludeCookies() { return includeCookies; }
     public void setIncludeCookies(boolean includeCookies) { this.includeCookies = includeCookies; }
+
+    public boolean isFollowRedirects() { return followRedirects; }
+    public void setFollowRedirects(boolean followRedirects) { this.followRedirects = followRedirects; }
 }
