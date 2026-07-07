@@ -288,7 +288,10 @@ public class PluginManager {
     }
 
     /**
-     * 卸载指定插件。
+     * 卸载指定插件: 从注册表移除、关闭 ClassLoader、从插件列表中删除。
+     * <p>
+     * 卸载后插件不再出现在列表中(与 Swing 版行为一致)。
+     * 源文件保留,可通过"安装"或重启重新加载。
      *
      * @param pluginId 插件 ID
      */
@@ -303,10 +306,7 @@ public class PluginManager {
                 log.warn("关闭 ClassLoader 失败: {}", pluginId, e);
             }
         }
-        Plugin plugin = plugins.get(pluginId);
-        if (plugin != null) {
-            plugin.setStatus(Plugin.LoadStatus.UNLOADED);
-        }
+        plugins.remove(pluginId);
         log.info("插件已卸载: {}", pluginId);
     }
 
